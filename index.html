@@ -742,11 +742,11 @@
                 gameState.player.contractYearsLeft = startingLeague === 'NCAA' ? 1 : 2;
                 gameState.player.teamType = ['contender','median','rebuild'][Math.floor(Math.random()*3)];
 
-                // Potencial oculto: maioria das carreiras fica entre 76 e 86.
+                // Potencial oculto: maioria das carreiras fica entre 72 e 86.
                 // Talentos geracionais são raros, e o potencial não é garantia de alcançá-lo.
                 const potentialRoll = Math.random();
                 let potential;
-                if (potentialRoll < 0.10) potential = 76;                                  // 10%: auge mínimo 76
+                if (potentialRoll < 0.10) potential = 72 + Math.floor(Math.random() * 5);             // 10%: auge 72–76
                 else if (potentialRoll < 0.35) potential = 77 + Math.floor(Math.random() * 5);  // 25%: 77–81
                 else if (potentialRoll < 0.72) potential = 82 + Math.floor(Math.random() * 5);  // 37%: 82–86
                 else if (potentialRoll < 0.94) potential = 87 + Math.floor(Math.random() * 4);  // 22%: 87–90
@@ -755,7 +755,7 @@
                 athlete.maxTargetOvr = potential;
                 athlete.careerTier = potential >= 91 ? 'goat' : potential >= 87 ? 'star' : potential >= 78 ? 'starter' : 'roleplayer';
                 athlete.developmentRate = 0.78 + Math.random() * 0.67;
-                athlete.peakAge = 27 + Math.floor(Math.random() * 6);
+                athlete.peakAge = 23 + Math.floor(Math.random() * 11); // Auge individual entre 23 e 33 anos
                 athlete.developmentMomentum = 0;
 
 
@@ -1369,7 +1369,7 @@
             const success = Math.random() < chance;
             const change = success ? winOvr : failOvr;
             // Dilemma bonuses cannot override the player's hidden career potential.
-            p.ovr = Math.max(50, Math.min(Math.max(76,p.maxTargetOvr || 80), p.ovr + change));
+            p.ovr = Math.max(50, Math.min(Math.max(72,p.maxTargetOvr || 80), p.ovr + change));
             const delta = p.ovr - before;
             p.pendingDilemmaResult = {before,after:p.ovr,delta,success,season:p.season};
             p.pendingPhase = 'dilemmaResult';
@@ -1527,7 +1527,7 @@
             if (ppg >= 20 && !p.twentyPpgOvrBonusUsed) {
                 p.ovr += 1;
                 p.twentyPpgOvrBonusUsed = true;
-                p.maxTargetOvr = Math.max(p.maxTargetOvr || 76, p.ovr);
+                p.maxTargetOvr = Math.max(p.maxTargetOvr || 72, p.ovr);
             }
 
             // Quatro temporadas consecutivas com 16+ PPG: +1 OVR uma vez na carreira.
@@ -1551,7 +1551,7 @@
             if (consecutive16Ppg >= 4 && !p.consistencyOvrBonusUsed) {
                 p.ovr += 1;
                 p.consistencyOvrBonusUsed = true;
-                p.maxTargetOvr = Math.max(p.maxTargetOvr || 76, p.ovr);
+                p.maxTargetOvr = Math.max(p.maxTargetOvr || 72, p.ovr);
             }
 
             // Bônus de premiações aplicados uma única vez em toda a carreira.
@@ -1559,17 +1559,17 @@
             // Prêmios obtidos nesta temporada são aplicados antes de registrar o histórico.
             if (p.league === 'NBA' && awards.includes('NBA All-Star') && p.ovr < 82) {
                 p.ovr = 82;
-                p.maxTargetOvr = Math.max(82, p.maxTargetOvr || 76);
+                p.maxTargetOvr = Math.max(82, p.maxTargetOvr || 72);
             }
             if (awards.includes('Sixth Man of the Year (6MOY)') && !p.sixthManOvrBonusUsed) {
                 p.ovr += 2;
                 p.sixthManOvrBonusUsed = true;
-                p.maxTargetOvr = Math.max(p.maxTargetOvr || 76, p.ovr);
+                p.maxTargetOvr = Math.max(p.maxTargetOvr || 72, p.ovr);
             }
             if (awards.includes('awardMip') && !p.mipOvrBonusUsed) {
                 p.ovr += 1;
                 p.mipOvrBonusUsed = true;
-                p.maxTargetOvr = Math.max(p.maxTargetOvr || 76, p.ovr);
+                p.maxTargetOvr = Math.max(p.maxTargetOvr || 72, p.ovr);
             }
             // DPOY: +1 OVR nas duas primeiras conquistas, no máximo.
             // Em saves antigos, prêmios anteriores contam para o limite.
@@ -1580,7 +1580,7 @@
             if (awards.includes('Defensive Player of the Year (DPOY)') && p.dpoyOvrBonusesUsed < 2) {
                 p.ovr += 1;
                 p.dpoyOvrBonusesUsed++;
-                p.maxTargetOvr = Math.max(p.maxTargetOvr || 76, p.ovr);
+                p.maxTargetOvr = Math.max(p.maxTargetOvr || 72, p.ovr);
             }
             // ROTY: +2 OVR na primeira conquista, sem duplicar em saves antigos.
             if (p.rotyOvrBonusUsed === undefined) {
@@ -1590,13 +1590,13 @@
             if (awards.includes('Rookie of the Year (ROTY)') && !p.rotyOvrBonusUsed) {
                 p.ovr += 2;
                 p.rotyOvrBonusUsed = true;
-                p.maxTargetOvr = Math.max(p.maxTargetOvr || 76, p.ovr);
+                p.maxTargetOvr = Math.max(p.maxTargetOvr || 72, p.ovr);
             }
             // Primeiro MVP da carreira: +3 OVR, sem repetir em conquistas futuras.
             if (awards.includes('awardMvp') && !p.mvpOvrBonusUsed) {
                 p.ovr += 3;
                 p.mvpOvrBonusUsed = true;
-                p.maxTargetOvr = Math.max(p.maxTargetOvr || 76, p.ovr);
+                p.maxTargetOvr = Math.max(p.maxTargetOvr || 72, p.ovr);
             }
             p.ovr = Math.min(99, p.ovr);
             p.maxOvrAchieved = Math.max(p.maxOvrAchieved || 0, p.ovr);
@@ -1812,48 +1812,56 @@
             document.getElementById('pre-season-screen').classList.remove('hidden');
         }
 
-        // Evolução anual única para temporadas com e sem campo de treinamento.
-        // O teto é um potencial, não uma meta garantida. Inclui estagnação e regressão.
+        // Cada carreira possui potencial, velocidade e idade de auge próprios.
+        // A evolução acelera na juventude e garante 72 OVR no auge, sem garantir
+        // que o atleta alcance todo seu potencial oculto.
         function evolveOverall(p, trained) {
             if (!Number.isFinite(p.developmentRate)) p.developmentRate = 0.78 + Math.random() * 0.67;
-            if (!Number.isFinite(p.peakAge)) p.peakAge = 27 + Math.floor(Math.random() * 6);
+            if (!Number.isFinite(p.peakAge)) p.peakAge = 23 + Math.floor(Math.random() * 11);
             if (!Number.isFinite(p.developmentMomentum)) p.developmentMomentum = 0;
             const age = p.age;
-            const potential = Math.max(76, p.ovr, p.maxTargetOvr || 80);
-            // Garante que o jogador alcance pelo menos 76 até seu auge,
-            // sem transformar todos os atletas em estrelas de 90+.
-            if (age <= p.peakAge && p.ovr < 76) {
-                const seasonsLeft = Math.max(1, p.peakAge - age + 1);
-                const needed = 76 - p.ovr;
-                if (needed >= seasonsLeft) {
-                    p.ovr = Math.min(76, p.ovr + Math.ceil(needed / seasonsLeft));
-                    p.maxOvrAchieved = Math.max(p.maxOvrAchieved || 0, p.ovr);
-                    return;
-                }
-            }
-            if (age >= p.peakAge && p.ovr < 76) p.ovr = 76;
-            const distance = potential - p.ovr;
-            if (age >= p.peakAge + 2) {
-                const declineChance = Math.min(.92, .20 + (age - p.peakAge - 2) * .13);
-                if (Math.random() < declineChance) p.ovr = Math.max(55, p.ovr - (Math.random() < .18 ? 2 : 1));
-                return;
-            }
-            // Próximo do potencial, o progresso fica progressivamente mais difícil.
-            const ageFactor = age <= 23 ? 1 : age <= 27 ? .78 : age <= p.peakAge ? .48 : .22;
-            const distanceFactor = distance <= 0 ? 0 : distance === 1 ? .22 : distance <= 3 ? .45 : distance <= 6 ? .70 : 1;
-            const trainingFactor = trained ? 1.13 : 1;
-            const chance = Math.min(.85, .66 * p.developmentRate * ageFactor * distanceFactor * trainingFactor);
-            const roll = Math.random();
-            if (distance > 0 && roll < chance) {
-                const bigJump = distance >= 7 && age <= 24 && Math.random() < .13;
-                p.ovr = Math.min(potential, p.ovr + (bigJump ? 2 : 1));
-                p.developmentMomentum = Math.min(2, p.developmentMomentum + 1);
-            } else if (roll > .955 && age >= 24) {
-                p.ovr = Math.max(60, p.ovr - 1);
-                p.developmentMomentum = -1;
-            } else {
+            const potential = Math.max(72, p.ovr, p.maxTargetOvr || 80);
+            const remaining = Math.max(1, p.peakAge - age + 1);
+
+            if (age >= 34) {
+                // Queda obrigatória por temporada a partir dos 34 anos.
+                // 34: -1, 35: -1, 36: -2; depois a perda aumenta gradualmente.
+                const drop = age === 34 ? 1 : age === 35 ? 1 : age === 36 ? 2
+                    : age <= 38 ? 2 : 3;
+                p.ovr = Math.max(40, p.ovr - drop);
                 p.developmentMomentum = 0;
+            } else if (age > p.peakAge) {
+                // Entre o auge individual e os 33 anos, mantém o patamar atingido.
+                // Alguns jogadores ainda conseguem uma pequena evolução tardia.
+                if (p.ovr < potential && Math.random() < .12 * p.developmentRate) {
+                    p.ovr = Math.min(potential, p.ovr + 1);
+                }
+                p.developmentMomentum = 0;
+            } else {
+                const distance = potential - p.ovr;
+                // Evolução inicial mais forte, com variação por potencial individual.
+                const ageFactor = age <= 23 ? 1.30 : age <= 27 ? 1.12 : .85;
+                const distanceFactor = distance <= 0 ? 0 : distance <= 2 ? .45 : distance <= 5 ? .75 : 1;
+                const trainingFactor = trained ? 1.13 : 1;
+                const chance = Math.min(.92, .77 * p.developmentRate * ageFactor * distanceFactor * trainingFactor);
+                const roll = Math.random();
+                if (distance > 0 && roll < chance) {
+                    const bigJump = distance >= 5 && age <= 27 && Math.random() < .32;
+                    p.ovr = Math.min(potential, p.ovr + (bigJump ? 2 : 1));
+                    p.developmentMomentum = Math.min(2, p.developmentMomentum + 1);
+                } else if (roll > .975 && age >= 24 && age < p.peakAge - 1) {
+                    p.ovr = Math.max(60, p.ovr - 1);
+                    p.developmentMomentum = -1;
+                } else {
+                    p.developmentMomentum = 0;
+                }
+                // Corrige trajetórias lentas progressivamente, evitando salto brusco
+                // de muitos pontos exatamente na temporada do auge.
+                const minimumOnTrack = Math.min(72, 72 - Math.max(0, remaining - 1) * 2);
+                p.ovr = Math.max(p.ovr, minimumOnTrack);
+                if (age === p.peakAge) p.ovr = Math.max(72, p.ovr);
             }
+            p.maxOvrAchieved = Math.max(p.maxOvrAchieved || 0, p.ovr);
         }
 
         function selectTraining(type) {
