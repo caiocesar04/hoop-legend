@@ -71,10 +71,10 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Escolha seu Time Inicial na NBB (Contrato de 2 Anos)</label>
-                    <div id="team-buttons-container" class="grid grid-cols-2 gap-2">
-                        <!-- Injetado por JS -->
-                    </div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Escolha a liga inicial (equipe sorteada automaticamente)</label>
+                    <select id="start-league" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white"><option value="NBB">🇧🇷 NBB — Brasil</option><option value="NCAA">🎓 College — NCAA</option><option value="EuroLiga">🌍 EuroLiga — Europa</option></select>
+                    <p class="text-xs text-slate-400 mt-2">Seu time será sorteado entre equipes da liga escolhida.</p>
+                </div>
                 </div>
 
                 <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 font-bold rounded-lg text-white shadow-lg shadow-emerald-900/30 transition-all transform active:scale-95">
@@ -425,7 +425,7 @@
 
             <!-- BOTÃO FIXO NO RODAPÉ DO MODAL -->
             <div class="pt-2 border-t border-slate-800/80 shrink-0">
-                <button onclick="location.reload()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 font-black rounded-2xl text-white shadow-lg transition-all text-sm">
+                <button onclick="restartCareer()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 font-black rounded-2xl text-white shadow-lg transition-all text-sm">
                     JOGAR NOVAMENTE 🏀
                 </button>
             </div>
@@ -444,6 +444,8 @@
             'União Corinthians', 'BRB / Brasília Basquete', 'Cerrado Basquete',
             'Coop/São José Basquete'
         ];
+
+        const NCAA_TEAMS = ['Kentucky Wildcats','Duke Blue Devils','North Carolina Tar Heels','Kansas Jayhawks','UConn Huskies','Gonzaga Bulldogs','Michigan State Spartans','UCLA Bruins','Arizona Wildcats','Houston Cougars','Purdue Boilermakers','Baylor Bears','Florida Gators','Alabama Crimson Tide','Tennessee Volunteers','Indiana Hoosiers'];
 
         const EURO_TEAMS = [
             'Real Madrid', 'FC Barcelona', 'Fenerbahçe', 'Olympiacos', 'Monaco', 'Panathinaikos'
@@ -494,7 +496,57 @@
             }
         };
 
+        const SAVE_KEY = 'hoop-legend-career-v2';
+        let seasonFinalized = false;
+        let simulationRunning = false;
         let currentStatsToastTimeout = null;
+        function saveCareer() {
+            try { localStorage.setItem(SAVE_KEY, JSON.stringify({ player: gameState.player, finalized: seasonFinalized })); }
+            catch (err) { console.warn('Não foi possível salvar a carreira:', err); }
+        }
+        function restoreCareer() {
+            try {
+                const raw = localStorage.getItem(SAVE_KEY);
+                if (!raw) return false;
+                const saved = JSON.parse(raw);
+                if (!saved?.player?.name || !Array.isArray(saved.player.history)) return false;
+                Object.assign(gameState.player, saved.player);
+                gameState.player.totalMatchesInLeague = gameState.player.league === 'NBA' ? 82 : (gameState.player.league === 'EuroLiga' ? 34 : (gameState.player.league === 'NCAA' ? 32 : 36));
+                gameState.player.seasonStats = Object.assign({pts:0,ast:0,reb:0,stl:0,blk:0,fgm:0,fga:0,fg3m:0,fg3a:0,games:0,wins:0}, gameState.player.seasonStats || {});
+                gameState.player.dilemmaSeasonsTriggered ||= [];
+                gameState.player.clutchMatchesThisSeason ||= [];
+                gameState.player.clubStats ||= {};
+                gameState.player.trophies ||= [];
+                gameState.player.pendingPhase ||= null;
+                seasonFinalized = !!saved.finalized;
+                document.getElementById('creation-screen').classList.add('hidden');
+                document.getElementById('app-shell').classList.remove('hidden');
+                updateDashboardUI(); renderHistoryList();
+                const phase = gameState.player.pendingPhase;
+                if (phase === 'summary') showSeasonSummaryFromHistory();
+                else if (phase === 'market') openMarketModal();
+                else if (phase === 'training') openPreSeason();
+                else if (phase === 'dilemma') {
+                    const d = CAREER_DILEMMAS.find(x => x.seasonTrigger === gameState.player.season);
+                    if (d) openDilemmaModal(d); else resumeCareerFlow();
+                }
+                else if (phase === 'retired') retireCareer();
+                else if (gameState.player.matchNum > gameState.player.totalMatchesInLeague && !seasonFinalized) endSeason();
+                return true;
+            } catch (err) { console.warn('Save inválido:', err); return false; }
+        }
+        function showSeasonSummaryFromHistory() {
+            const p=gameState.player, h=p.history[p.history.length-1];
+            if (!h) return;
+            setElemText('summary-title', `RESUMO DA TEMPORADA ${h.season} (${h.age} ANOS)`);
+            setElemText('summary-team-record', h.record.replace('-', ' V - ')+' D');
+            setElemText('summary-team-result', h.result);
+            setElemText('summary-player-stats', h.stats);
+            setElemText('summary-player-fg', h.shooting || '');
+            document.getElementById('summary-awards').innerHTML = h.awards.length ? h.awards.map(a=>`<span class="bg-amber-950 text-amber-300 border border-amber-700 px-2.5 py-1 rounded-md text-xs font-bold">${a}</span>`).join('') : 'Nenhum prêmio individual nesta temporada.';
+            document.getElementById('modal-season-summary').classList.remove('hidden');
+        }
+
         let postNewsCallback = null;
 
         function setElemText(id, text) {
@@ -504,19 +556,10 @@
 
         window.onload = () => {
             setupCreationForm();
+            restoreCareer();
         };
 
         function setupCreationForm() {
-            const container = document.getElementById('team-buttons-container');
-            container.innerHTML = NBB_TEAMS.map(team => `
-                <button type="button" onclick="selectInitialTeam('${team}', this)" class="team-btn p-3 bg-slate-800 hover:bg-emerald-600/40 border border-slate-700 rounded-lg text-xs font-bold text-white transition-all text-center">
-                    ${team}
-                </button>
-            `).join('');
-
-            container.children[0].classList.add('bg-emerald-600', 'border-emerald-500');
-            gameState.player.team = NBB_TEAMS[0];
-
             const form = document.getElementById('creation-form');
             form.onsubmit = (e) => {
                 e.preventDefault();
@@ -525,28 +568,39 @@
 
                 if (nameInput && nameInput.value.trim() !== '') gameState.player.name = nameInput.value.trim();
                 if (posSelect) gameState.player.position = posSelect.value;
+                const startingLeague = document.getElementById('start-league').value;
+                const startingPool = startingLeague === 'NCAA' ? NCAA_TEAMS : (startingLeague === 'EuroLiga' ? EURO_TEAMS : NBB_TEAMS);
+                gameState.player.league = startingLeague;
+                gameState.player.team = startingPool[Math.floor(Math.random() * startingPool.length)];
+                gameState.player.totalMatchesInLeague = startingLeague === 'NCAA' ? 32 : (startingLeague === 'EuroLiga' ? 34 : 36);
+                gameState.player.contractYearsLeft = startingLeague === 'NCAA' ? 1 : 2;
+                gameState.player.teamType = ['contender','median','rebuild'][Math.floor(Math.random()*3)];
 
-                let randTier = Math.random() * 100;
-                if (randTier < 25) {
-                    gameState.player.careerTier = 'goat';
-                    gameState.player.maxTargetOvr = 94;
-                } else if (randTier < 60) {
-                    gameState.player.careerTier = 'star';
-                    gameState.player.maxTargetOvr = 88;
-                } else if (randTier < 90) {
-                    gameState.player.careerTier = 'starter';
-                    gameState.player.maxTargetOvr = 82;
-                } else {
-                    gameState.player.careerTier = 'roleplayer';
-                    gameState.player.maxTargetOvr = 75;
-                }
+                // Potencial oculto: maioria das carreiras fica entre 76 e 86.
+                // Talentos geracionais são raros, e o potencial não é garantia de alcançá-lo.
+                const potentialRoll = Math.random();
+                let potential;
+                if (potentialRoll < 0.15) potential = 76;                                  // 15%: auge mínimo 76
+                else if (potentialRoll < 0.49) potential = 77 + Math.floor(Math.random() * 5);  // 34%: 77–81
+                else if (potentialRoll < 0.79) potential = 82 + Math.floor(Math.random() * 5);  // 30%: 82–86
+                else if (potentialRoll < 0.95) potential = 87 + Math.floor(Math.random() * 4);  // 16%: 87–90
+                else potential = 91 + Math.floor(Math.random() * 4);                            // 5%: 91–94
+                const athlete = gameState.player;
+                athlete.maxTargetOvr = potential;
+                athlete.careerTier = potential >= 91 ? 'goat' : potential >= 87 ? 'star' : potential >= 78 ? 'starter' : 'roleplayer';
+                athlete.developmentRate = 0.65 + Math.random() * 0.7;
+                athlete.peakAge = 27 + Math.floor(Math.random() * 6);
+                athlete.developmentMomentum = 0;
+
 
                 document.getElementById('creation-screen').classList.add('hidden');
                 document.getElementById('app-shell').classList.remove('hidden');
 
                 generateClutchMatches();
+                gameState.player.seasonRole = calculateRole();
+                saveCareer();
                 updateDashboardUI();
-                showNewsCard("BEM-VINDO AO HOOP LEGEND!", `<p>Sua carreira profissional começou aos <strong>18 anos</strong> na <strong>NBB</strong> vestindo a camisa do <strong>${gameState.player.team}</strong>.</p><p class="text-xs text-slate-400 mt-1">Mostre seu potencial na quadra!</p>`, "TEMPORADA 1 INICIADA");
+                showNewsCard("BEM-VINDO AO HOOP LEGEND!", `<p>Sua carreira profissional começou aos <strong>18 anos</strong> na <strong>${gameState.player.league}</strong> vestindo a camisa do <strong>${gameState.player.team}</strong>.</p><p class="text-xs text-slate-400 mt-1">Mostre seu potencial na quadra!</p>`, "TEMPORADA 1 INICIADA");
             };
         }
 
@@ -609,7 +663,7 @@
             setElemText('ui-player-match-num', `${p.matchNum}/${p.totalMatchesInLeague}`);
 
             setElemText('card-team-home', p.team);
-            let pool = p.league === 'NBA' ? NBA_TEAMS : (p.league === 'EuroLiga' ? EURO_TEAMS : NBB_TEAMS);
+            let pool = p.league === 'NBA' ? NBA_TEAMS : (p.league === 'EuroLiga' ? EURO_TEAMS : (p.league === 'NCAA' ? NCAA_TEAMS : NBB_TEAMS));
             let opps = pool.filter(t => t !== p.team);
             let opp = opps[Math.floor(Math.random() * opps.length)] || opps[0];
             setElemText('card-team-away', opp);
@@ -627,6 +681,7 @@
             setElemText('stat-fg-pct', `${fgPct}%`);
             setElemText('stat-3p-pct', `${fg3Pct}%`);
             setElemText('stat-record', `${p.seasonStats.wins} - ${p.seasonStats.games - p.seasonStats.wins}`);
+            saveCareer();
         }
 
         function showToast(msg, type = 'info') {
@@ -727,7 +782,7 @@
         function checkSurpriseTradeMidSeason() {
             const p = gameState.player;
             // Se OVR for 84+ é intocável e não é trocado. Se já atingiu 5 trocas na carreira, cancela.
-            if (p.league !== 'NBA' || p.isFreeAgency || p.ovr >= 84 || p.tradesCount >= 5) return false;
+            if (p.league !== 'NBA' || p.isFreeAgency || p.ovr >= 84 || p.tradesCount >= 5 || p.freeAgencyProtectedSeason === p.season) return false;
             // Cooldown: se já foi trocado nesta temporada, não troca de novo
             if (p.lastTradedSeason === p.season) return false;
 
@@ -741,7 +796,7 @@
         function checkSurpriseTradeSeasonStart() {
             const p = gameState.player;
             // Se OVR for 84+ é intocável e não é trocado. Se já atingiu 5 trocas na carreira, cancela.
-            if (p.league !== 'NBA' || p.isFreeAgency || p.ovr >= 84 || p.tradesCount >= 5) return false;
+            if (p.league !== 'NBA' || p.isFreeAgency || p.ovr >= 84 || p.tradesCount >= 5 || p.freeAgencyProtectedSeason === p.season) return false;
             // Cooldown: se já foi trocado nesta temporada, não troca de novo
             if (p.lastTradedSeason === p.season) return false;
 
@@ -801,6 +856,7 @@
                     "BOMBA DA LIGA (3 TEAMS)"
                 );
             }
+            saveCareer();
             return true;
         }
 
@@ -848,40 +904,11 @@
         }
 
         function resolveClutch(actionType) {
-            const p = gameState.player;
             document.getElementById('match-screen').classList.add('hidden');
-            p.pendingClutch = false;
-
-            let successChance = 0.48 + (p.ovr / 140);
-            if (actionType === 'drive' && (p.position === 'PG' || p.position === 'SG')) successChance += 0.08;
-            if (actionType === 'pass') successChance += 0.05;
-
-            let success = Math.random() < successChance;
-            let currentOpponent = document.getElementById('card-team-away').innerText;
-
-            let matchStats = { pts: 5, ast: 1, reb: 1, stl: 1, blk: 0, fgm: 2, fga: 3 };
-
-            if (success) {
-                showToast('🎯 Jogada decisiva bem-sucedida! Vitória no clutch!', 'success');
-                logNews(`Rodada ${p.matchNum}: Cestinha no clutch! Garantiu a vitória.`);
-                p.seasonStats.pts += 5;
-                p.seasonStats.wins++;
-                showMatchStatsPopup(p.matchNum, currentOpponent, matchStats, true);
-            } else {
-                showToast('❌ Erro na decisão final! Derrota na partida.', 'error');
-                logNews(`Rodada ${p.matchNum}: Erro no clutch. Decisão parada pela defesa.`);
-                showMatchStatsPopup(p.matchNum, currentOpponent, matchStats, false);
-            }
-
-            p.matchNum++;
-
-            if (!checkSurpriseTradeMidSeason()) {
-                if (p.matchNum > p.totalMatchesInLeague) {
-                    endSeason();
-                } else {
-                    updateDashboardUI();
-                }
-            }
+            gameState.player.pendingClutch = false;
+            const p = gameState.player;
+            const chance = Math.min(0.90, 0.48 + p.ovr / 140 + (actionType === 'pass' ? .05 : 0));
+            simulateSingleMatch(Math.random() < chance);
         }
 
         // CALCULADOR DE TETO POR OVR
@@ -895,7 +922,7 @@
 
         // SISTEMA DE REBOTES E ASSISTÊNCIAS COM RESPEITO RIGOROSO A POSIÇÃO, OVR E FOCO DE TREINO (+1)
         // E SISTEMA REALISTA DE PONTUAÇÃO EXPLOSIVA COM BASE NO OVR (30+, 40+ E 50+ PTS)
-        function simulateSingleMatch() {
+        function simulateSingleMatch(forcedWin = null, quiet = false) {
             const p = gameState.player;
             const ovr = p.ovr;
             const focus = p.trainingFocus;
@@ -1035,13 +1062,18 @@
             // 3. ROUBOS E TOCOS
             let stl = Math.max(0, Math.round((ovr / 99) * 1.5 + (focus === 'defense' ? 1.2 : 0) + Math.random() * 0.8));
             
-            let blkBase = (ovr / 99) * 1.0 + Math.random() * 0.8;
-            if (isBigMan && focus === 'rebounding') {
-                blkBase = Math.floor(Math.random() * 2) + 2; 
-            } else if (focus === 'defense') {
-                blkBase += 1.2;
-            }
-            let blk = Math.max(0, Math.round(blkBase));
+            const blockFocus = focus === 'defense' || focus === 'rebounding';
+            const blockLimits = { PG: blockFocus ? 2.0 : 1.5, SG: blockFocus ? 2.0 : 1.5,
+                                  SF: blockFocus ? 2.4 : 1.8, PF: blockFocus ? 3.1 : 2.4,
+                                  C: blockFocus ? 3.5 : 2.7 };
+            const blockBase = {PG:.35, SG:.45, SF:.85, PF:1.45, C:1.85}[pos] || .5;
+            let blk = Math.max(0, Math.round(blockBase + (ovr-70)*.018 + (blockFocus ? .7 : 0) + (Math.random()-.5)*2.3));
+            if (pos === 'C' && Math.random() < .003) blk = 6 + Math.floor(Math.random()*3);
+            else if (pos === 'C') blk = Math.min(5, blk);
+            else if (pos === 'PG' || pos === 'SG') blk = Math.min(blockFocus ? 4 : 3, blk);
+            // Limite de média, sem impedir partidas isoladas acima da média.
+            const allowedTotal = Math.floor(blockLimits[pos] * (p.seasonStats.games + 1) + 1e-8);
+            blk = Math.max(0, Math.min(blk, allowedTotal - p.seasonStats.blk));
 
             // 4. ESTATÍSTICAS DE ARREMESSO
             let fga = Math.max(pts, Math.round(pts * 1.2 + Math.random() * 2));
@@ -1078,33 +1110,32 @@
             else if (p.teamType === 'rebuild') teamWinProb = 0.32 + (ovr / 400);
             else teamWinProb = 0.46 + (ovr / 420);
 
-            const win = Math.random() < teamWinProb;
+            const win = forcedWin === null ? Math.random() < teamWinProb : forcedWin;
             if (win) p.seasonStats.wins++;
 
-            showMatchStatsPopup(p.matchNum, currentOpponent, { pts, ast, reb, stl, blk, fgm, fga }, win);
+            if (!quiet) showMatchStatsPopup(p.matchNum, currentOpponent, { pts, ast, reb, stl, blk, fgm, fga }, win);
 
             p.matchNum++;
 
-            if (!checkSurpriseTradeMidSeason()) {
-                if (p.matchNum > p.totalMatchesInLeague) {
-                    endSeason();
-                } else {
-                    updateDashboardUI();
-                }
-            }
+            if (!quiet) {
+                if (p.matchNum > p.totalMatchesInLeague) endSeason();
+                else if (!checkSurpriseTradeMidSeason()) updateDashboardUI();
+                saveCareer();
+            } else saveCareer();
         }
 
         function simulateFullSeason() {
             const p = gameState.player;
-            while (p.matchNum <= p.totalMatchesInLeague) {
-                if (p.clutchMatchesThisSeason.includes(p.matchNum)) {
-                    let success = Math.random() < (0.45 + p.ovr / 150);
-                    if (success) p.seasonStats.wins++;
-                    p.matchNum++;
-                } else {
-                    simulateSingleMatch();
-                }
-            }
+            if (simulationRunning || seasonFinalized || p.pendingPhase || p.pendingClutch) return;
+            simulationRunning = true;
+            try {
+                while (p.matchNum <= p.totalMatchesInLeague) simulateSingleMatch(null, true);
+                updateDashboardUI();
+                endSeason();
+            } catch (err) {
+                console.error('Erro na simulação:', err);
+                showToast('Erro ao simular. Progresso salvo; tente novamente.', 'error');
+            } finally { simulationRunning = false; saveCareer(); }
         }
 
         const CAREER_DILEMMAS = [
@@ -1151,6 +1182,8 @@
             let currentDilemma = CAREER_DILEMMAS.find(d => d.seasonTrigger === p.season && !p.dilemmaSeasonsTriggered.includes(d.seasonTrigger));
             if (currentDilemma) {
                 p.dilemmaSeasonsTriggered.push(currentDilemma.seasonTrigger);
+                p.pendingPhase = 'dilemma';
+                saveCareer();
                 openDilemmaModal(currentDilemma);
                 return true;
             }
@@ -1187,11 +1220,16 @@
             } else {
                 showToast('Dilema concluído sem alterações de OVR.', 'info');
             }
+            p.pendingPhase = null;
             updateDashboardUI();
+            resumeCareerFlow();
         }
 
         function endSeason() {
             const p = gameState.player;
+            if (seasonFinalized) return;
+            if (p.seasonStats.games < p.totalMatchesInLeague) return;
+            seasonFinalized = true;
             const g = p.seasonStats.games;
             const wins = p.seasonStats.wins;
             const losses = g - wins;
@@ -1202,8 +1240,8 @@
             const fgPct = p.seasonStats.fga > 0 ? ((p.seasonStats.fgm / p.seasonStats.fga) * 100).toFixed(1) : '0.0';
             const fg3Pct = p.seasonStats.fg3a > 0 ? ((p.seasonStats.fg3m / p.seasonStats.fg3a) * 100).toFixed(1) : '0.0';
 
-            const roleInfo = calculateRole();
-            p.contractYearsLeft--;
+            const roleInfo = p.seasonRole || calculateRole();
+            p.contractYearsLeft = Math.max(0, p.contractYearsLeft - 1);
 
             if (!p.clubStats[p.team]) {
                 p.clubStats[p.team] = { games: 0, pts: 0, ast: 0, reb: 0, stl: 0, blk: 0, fgm: 0, fga: 0, fg3m: 0, fg3a: 0, trophies: [], league: p.league };
@@ -1251,12 +1289,24 @@
                 awards.push("Cestinha da Liga");
             }
 
-            if (p.league === 'NBA' && p.nbaSeasonCount === 1 && ppg >= 14.0) {
+            if (p.league === 'NBA' && p.nbaSeasonCount === 1 && ppg >= 16 && wins >= 25 && (ppg + apg * 1.3 + rpg * .5) >= 21 && Math.random() < Math.min(.90, .35 + (ppg-16)*.045 + (wins-25)*.006)) {
                 awards.push("Rookie of the Year (ROTY)");
             }
 
-            if (p.league === 'NBA' && roleInfo.isBench && ppg >= 11.5) {
-                awards.push("Sixth Man of the Year (6MOY)");
+            if (p.league === 'NBA') {
+                // Reserva durante a temporada; produção, vitórias e contribuição ofensiva.
+                const benchEligible = roleInfo.isBench && ppg >= 11.5 && wins >= 35 && (ppg + apg * 1.5 + rpg * .45) >= 17;
+                if (benchEligible && Math.random() < Math.min(.85, .25 + (ppg-11.5)*.035 + (wins-35)*.012)) awards.push('Sixth Man of the Year (6MOY)');
+                const bpg = p.seasonStats.blk / g;
+                const spg = p.seasonStats.stl / g;
+                const defensiveScore = spg * 1.25 + bpg * 1.4 + (wins / 82) * 1.5;
+                if (wins >= 40 && defensiveScore >= 4.5 && Math.random() < Math.min(.85, .18 + (defensiveScore-4.5)*.19)) awards.push('Defensive Player of the Year (DPOY)');
+                if (wins >= 47 && ppg >= 21) {
+                    awards.push('NBA All-Star');
+                    if (wins >= 49 && ppg >= 23) awards.push('All-NBA First Team');
+                    else if (wins >= 48 && ppg >= 22) awards.push('All-NBA Second Team');
+                    else awards.push('All-NBA Third Team');
+                }
             }
 
             let canBeMvp = p.ovr >= 85 && isContenderTeam;
@@ -1297,6 +1347,7 @@
                 record: `${wins}-${losses}`,
                 stats: `${ppg} PPG | ${apg} APG | ${rpg} REB`,
                 result: teamResult,
+                shooting: `${fgPct}% FG | ${fg3Pct}% 3P`,
                 awards: awards
             });
 
@@ -1318,8 +1369,10 @@
                 awards.map(a => `<span class="bg-amber-950 text-amber-300 border border-amber-700 px-2.5 py-1 rounded-md text-xs font-bold">${a}</span>`).join('') :
                 `<span class="text-slate-500 italic">Nenhum prêmio individual conquistado nesta temporada.</span>`;
 
+            p.pendingPhase = 'summary';
             document.getElementById('modal-season-summary').classList.remove('hidden');
             renderHistoryList();
+            saveCareer();
         }
 
         function renderHistoryList() {
@@ -1339,24 +1392,23 @@
 
         function proceedAfterSummary() {
             document.getElementById('modal-season-summary').classList.add('hidden');
-            
-            if (gameState.player.season >= 20) {
-                showToast('Você completou 20 temporadas de carreira profissional! Hora de aposentar-se.', 'info');
-                retireCareer();
+            gameState.player.pendingPhase = null;
+            saveCareer();
+            if (gameState.player.season >= 20) { retireCareer(); return; }
+            if (checkDilemma()) return;
+            resumeCareerFlow();
+        }
+        function resumeCareerFlow() {
+            const p = gameState.player;
+            if (p.contractYearsLeft <= 0) {
+                p.isFreeAgency = true;
+                p.pendingPhase = 'market';
+                saveCareer();
+                openMarketModal();
             } else {
-                if (checkDilemma()) return;
-
-                if (gameState.player.contractYearsLeft <= 0) {
-                    gameState.player.isFreeAgency = true;
-                    openMarketModal();
-                } else {
-                    gameState.player.isFreeAgency = false;
-                    if (gameState.player.season % 3 === 0) {
-                        openPreSeason();
-                    } else {
-                        advanceToNextSeasonWithoutCamp();
-                    }
-                }
+                p.isFreeAgency = false;
+                if (p.season % 3 === 0) openPreSeason();
+                else advanceToNextSeasonWithoutCamp();
             }
         }
 
@@ -1367,7 +1419,24 @@
 
             const isNbaDeclined = p.age >= 33 && p.ovr < 80;
 
-            if (p.league === 'NBB') {
+            if (p.league === 'NCAA') {
+                const pool = NCAA_TEAMS.filter(t=>t!==p.team);
+                addMarketOption(container, `🎓 Transferir para ${pool[Math.floor(Math.random()*pool.length)]} (NCAA)`, 'College', 'Mais uma temporada universitária.', () => {
+                    p.team = pool[Math.floor(Math.random()*pool.length)]; p.contractYearsLeft=1; p.totalMatchesInLeague=32; p.isFreeAgency=false; closeMarket(); postMarketFlow();
+                });
+                const nbaOptions = generateFilteredNbaOptions(p.ovr);
+                nbaOptions.forEach(opt=>addMarketOption(container, `🏀 NBA: ${opt.teamName} (${opt.roleName})`, 'NBA Draft', opt.desc, ()=>{
+                    p.league='NBA'; p.team=opt.teamName; p.teamType=opt.type; p.contractYearsLeft=3; p.totalMatchesInLeague=82; p.isFreeAgency=false; closeMarket(); postMarketFlow();
+                }));
+                const euro = EURO_TEAMS[Math.floor(Math.random()*EURO_TEAMS.length)];
+                addMarketOption(container, `🌍 EuroLiga: ${euro}`, 'Europa', 'Iniciar carreira profissional na Europa.', ()=>{
+                    p.league='EuroLiga';p.team=euro;p.teamType='median';p.contractYearsLeft=2;p.totalMatchesInLeague=34;p.isFreeAgency=false;closeMarket();postMarketFlow();
+                });
+                const nbb=NBB_TEAMS[Math.floor(Math.random()*NBB_TEAMS.length)];
+                addMarketOption(container, `🇧🇷 NBB: ${nbb}`, 'Brasil', 'Iniciar carreira profissional no Brasil.', ()=>{
+                    p.league='NBB';p.team=nbb;p.teamType='median';p.contractYearsLeft=2;p.totalMatchesInLeague=36;p.isFreeAgency=false;closeMarket();postMarketFlow();
+                });
+            } else if (p.league === 'NBB') {
                 let pool = NBB_TEAMS.filter(t => t !== p.team);
                 let randNbb = pool[Math.floor(Math.random() * pool.length)];
 
@@ -1390,7 +1459,7 @@
                     let nbaOptions = generateFilteredNbaOptions(p.ovr);
                     nbaOptions.forEach(opt => {
                         addMarketOption(container, `🏀 Proposta NBA: ${opt.teamName} (${opt.roleName} - 3 Anos)`, opt.roleName, opt.desc, () => {
-                            p.league = 'NBA'; p.team = opt.teamName; p.teamType = opt.type; p.contractYearsLeft = 3; p.totalMatchesInLeague = 82; p.nbaSeasonCount++; p.isFreeAgency = false;
+                            p.league = 'NBA'; p.team = opt.teamName; p.teamType = opt.type; p.contractYearsLeft = 3; p.totalMatchesInLeague = 82; p.isFreeAgency = false;
                             closeMarket(); postMarketFlow();
                         });
                     });
@@ -1415,7 +1484,7 @@
                     let nbaOptions = generateFilteredNbaOptions(p.ovr);
                     nbaOptions.forEach(opt => {
                         addMarketOption(container, `🏀 Proposta NBA: ${opt.teamName} (${opt.roleName} - 3 Anos)`, opt.roleName, opt.desc, () => {
-                            p.league = 'NBA'; p.team = opt.teamName; p.teamType = opt.type; p.contractYearsLeft = 3; p.totalMatchesInLeague = 82; p.nbaSeasonCount++; p.isFreeAgency = false;
+                            p.league = 'NBA'; p.team = opt.teamName; p.teamType = opt.type; p.contractYearsLeft = 3; p.totalMatchesInLeague = 82; p.isFreeAgency = false;
                             closeMarket(); postMarketFlow();
                         });
                     });
@@ -1442,7 +1511,7 @@
                     let nbaOptions = generateFilteredNbaOptions(p.ovr);
                     nbaOptions.forEach(opt => {
                         addMarketOption(container, `🏀 Assinar com ${opt.teamName} (${opt.roleName} - 3 Anos)`, opt.roleName, opt.desc, () => {
-                            p.team = opt.teamName; p.teamType = opt.type; p.contractYearsLeft = 3; p.totalMatchesInLeague = 82; p.nbaSeasonCount++; p.isFreeAgency = false;
+                            p.team = opt.teamName; p.teamType = opt.type; p.contractYearsLeft = 3; p.totalMatchesInLeague = 82; p.isFreeAgency = false;
                             closeMarket(); postMarketFlow();
                         });
                     });
@@ -1453,34 +1522,11 @@
         }
 
         function generateFilteredNbaOptions(ovr) {
-            let shuffled = [...NBA_TEAMS].sort(() => 0.5 - Math.random());
-            let options = [];
-
-            if (ovr >= 85) {
-                options = [
-                    { teamName: shuffled[0], roleName: 'Candidato ao Título', type: 'contender', desc: 'Forte interesse de uma potência da liga.' },
-                    { teamName: shuffled[1], roleName: 'Candidato ao Título', type: 'contender', desc: 'Busca sua estrela para anel de campeão.' },
-                    { teamName: shuffled[2], roleName: 'Equipe Mediana', type: 'median', desc: 'Proposta estável para brigar nos playoffs.' }
-                ];
-            } else if (ovr >= 82) {
-                let isContenderChance = Math.random() < 0.3;
-                options = [
-                    { teamName: shuffled[0], roleName: 'Equipe Mediana', type: 'median', desc: 'Papel sólido em franquia de meio de tabela.' },
-                    { teamName: shuffled[1], roleName: 'Equipe Mediana', type: 'median', desc: 'Oferece bons minutos e estabilidade.' },
-                    { teamName: shuffled[2], roleName: isContenderChance ? 'Candidato ao Título' : 'Reconstrução', type: isContenderChance ? 'contender' : 'rebuild', desc: isContenderChance ? 'Surpreendente interesse de um contender!' : 'Espaço garantido em time em reconstrução.' }
-                ];
-            } else {
-                let rareChance = Math.random();
-                let rareType = rareChance < 0.15 ? 'median' : (rareChance < 0.05 ? 'contender' : 'rebuild');
-                let rareRole = rareType === 'contender' ? 'Candidato ao Título' : (rareType === 'median' ? 'Equipe Mediana' : 'Reconstrução');
-
-                options = [
-                    { teamName: shuffled[0], roleName: 'Reconstrução', type: 'rebuild', desc: 'Franquia em reformulação precisando de peças.' },
-                    { teamName: shuffled[1], roleName: 'Reconstrução', type: 'rebuild', desc: 'Minutos garantidos para desenvolver seu jogo.' },
-                    { teamName: shuffled[2], roleName: rareRole, type: rareType, desc: rareType === 'contender' ? 'Raro interesse de um contender no seu perfil.' : (rareType === 'median' ? 'Chance em time mediano.' : 'Aposta de time em reconstrução.') }
-                ];
-            }
-            return options;
+            const teams = [...NBA_TEAMS].sort(() => Math.random() - .5);
+            const types = ovr >= 85 ? ['contender','median','contender','rebuild'] : ovr >= 79 ? ['median','contender','rebuild','median'] : ['rebuild','median','contender','rebuild'];
+            const labels = {contender:'Candidato ao Título', median:'Equipe Competitiva', rebuild:'Reconstrução'};
+            return types.map((type,i) => ({teamName:teams[i],roleName:labels[type],type,
+                desc:type==='contender'?'Disputar playoffs e buscar o título, com forte concorrência por minutos.':type==='median'?'Equipe equilibrada com oportunidade de crescer e disputar playoffs.':'Projeto de desenvolvimento com espaço para conquistar minutos.'}));
         }
 
         function addMarketOption(container, title, badge, desc, callback) {
@@ -1502,6 +1548,9 @@
         }
 
         function postMarketFlow() {
+            gameState.player.freeAgencyProtectedSeason = gameState.player.season + 1;
+            gameState.player.pendingPhase = null;
+            saveCareer();
             if (gameState.player.season % 3 === 0) {
                 openPreSeason();
             } else {
@@ -1512,7 +1561,53 @@
         function openPreSeason() {
             const p = gameState.player;
             setElemText('pre-season-age-info', `Temporada ${p.season + 1} (${p.age + 1} anos) - Ciclo de Treinamento de 3 Anos:`);
+            p.pendingPhase = 'training';
+            saveCareer();
             document.getElementById('pre-season-screen').classList.remove('hidden');
+        }
+
+        // Evolução anual única para temporadas com e sem campo de treinamento.
+        // O teto é um potencial, não uma meta garantida. Inclui estagnação e regressão.
+        function evolveOverall(p, trained) {
+            if (!Number.isFinite(p.developmentRate)) p.developmentRate = 0.65 + Math.random() * 0.7;
+            if (!Number.isFinite(p.peakAge)) p.peakAge = 27 + Math.floor(Math.random() * 6);
+            if (!Number.isFinite(p.developmentMomentum)) p.developmentMomentum = 0;
+            const age = p.age;
+            const potential = Math.max(76, p.ovr, p.maxTargetOvr || 80);
+            // Garante que o jogador alcance pelo menos 76 até seu auge,
+            // sem transformar todos os atletas em estrelas de 90+.
+            if (age <= p.peakAge && p.ovr < 76) {
+                const seasonsLeft = Math.max(1, p.peakAge - age + 1);
+                const needed = 76 - p.ovr;
+                if (needed >= seasonsLeft) {
+                    p.ovr = Math.min(76, p.ovr + Math.ceil(needed / seasonsLeft));
+                    p.maxOvrAchieved = Math.max(p.maxOvrAchieved || 0, p.ovr);
+                    return;
+                }
+            }
+            if (age >= p.peakAge && p.ovr < 76) p.ovr = 76;
+            const distance = potential - p.ovr;
+            if (age >= p.peakAge + 2) {
+                const declineChance = Math.min(.92, .20 + (age - p.peakAge - 2) * .13);
+                if (Math.random() < declineChance) p.ovr = Math.max(55, p.ovr - (Math.random() < .18 ? 2 : 1));
+                return;
+            }
+            // Próximo do potencial, o progresso fica progressivamente mais difícil.
+            const ageFactor = age <= 23 ? 1 : age <= 27 ? .78 : age <= p.peakAge ? .48 : .22;
+            const distanceFactor = distance <= 0 ? 0 : distance === 1 ? .22 : distance <= 3 ? .45 : distance <= 6 ? .70 : 1;
+            const trainingFactor = trained ? 1.13 : 1;
+            const chance = Math.min(.83, .57 * p.developmentRate * ageFactor * distanceFactor * trainingFactor);
+            const roll = Math.random();
+            if (distance > 0 && roll < chance) {
+                const bigJump = distance >= 7 && age <= 24 && Math.random() < .13;
+                p.ovr = Math.min(potential, p.ovr + (bigJump ? 2 : 1));
+                p.developmentMomentum = Math.min(2, p.developmentMomentum + 1);
+            } else if (roll > .955 && age >= 24) {
+                p.ovr = Math.max(60, p.ovr - 1);
+                p.developmentMomentum = -1;
+            } else {
+                p.developmentMomentum = 0;
+            }
         }
 
         function selectTraining(type) {
@@ -1523,16 +1618,12 @@
 
             if (p.league === 'NBA') p.nbaSeasonCount++;
 
-            if (p.age >= 33) {
-                let decline = Math.round(1 + Math.random() * 2);
-                p.ovr = Math.max(50, p.ovr - decline);
-                logNews(`📉 Idade avançada (${p.age} anos): Desgaste físico natural reduziu seu OVR em -${decline}.`);
-            } else {
-                let jump = Math.round(3 + Math.random() * 3);
-                p.ovr = Math.min(p.maxTargetOvr, p.ovr + jump);
-            }
+            evolveOverall(p, true);
 
             p.matchNum = 1;
+            p.seasonRole = calculateRole();
+            p.pendingPhase = null;
+            seasonFinalized = false;
             p.seasonStats = { pts: 0, ast: 0, reb: 0, stl: 0, blk: 0, fgm: 0, fga: 0, fg3m: 0, fg3a: 0, games: 0, wins: 0 };
             generateClutchMatches();
 
@@ -1557,12 +1648,12 @@
 
             if (p.league === 'NBA') p.nbaSeasonCount++;
 
-            if (p.age >= 33) {
-                let decline = Math.round(1 + Math.random() * 2);
-                p.ovr = Math.max(50, p.ovr - decline);
-            }
+            evolveOverall(p, false);
 
             p.matchNum = 1;
+            p.seasonRole = calculateRole();
+            p.pendingPhase = null;
+            seasonFinalized = false;
             p.seasonStats = { pts: 0, ast: 0, reb: 0, stl: 0, blk: 0, fgm: 0, fga: 0, fg3m: 0, fg3a: 0, games: 0, wins: 0 };
             generateClutchMatches();
 
@@ -1579,6 +1670,12 @@
             );
         }
 
+        function restartCareer() {
+            if (!confirm('Iniciar uma nova carreira? O progresso salvo será apagado.')) return;
+            localStorage.removeItem(SAVE_KEY);
+            location.reload();
+        }
+
         // RESUMO DA CARREIRA LIMPO E ORGANIZADO
         function retireCareer() {
             const p = gameState.player;
@@ -1586,7 +1683,7 @@
 
             let tierDesc = "";
             if (maxOvr >= 90) tierDesc = "GOAT 🐐";
-            else if (maxOvr >= 83) tierDesc = "Craque da Liga ⭐";
+            else if (maxOvr >= 83) tierDesc = "Lenda da Liga ⭐";
             else if (maxOvr >= 76) tierDesc = "Titular Consistente 🏀";
             else tierDesc = "Role Player 🛡️";
 
@@ -1666,6 +1763,8 @@
                 </tr>
             `).join('');
 
+            p.pendingPhase = 'retired';
+            saveCareer();
             document.getElementById('modal-career-summary').classList.remove('hidden');
         }
     </script>
