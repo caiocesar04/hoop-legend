@@ -10,7 +10,7 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #0f172a;
+            background-color: #0c101a;
             color: #f8fafc;
             user-select: none;
         }
@@ -28,12 +28,29 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #475569;
         }
+        body::before {content:"";position:fixed;inset:0;pointer-events:none;opacity:.12;background:repeating-linear-gradient(0deg,transparent 0 58px,#fb923c 59px 60px),repeating-linear-gradient(90deg,transparent 0 58px,#fb923c 59px 60px);mask-image:linear-gradient(90deg,transparent,#000 50%,transparent);z-index:-1}
+        .court-brand {letter-spacing:.1em;text-transform:uppercase}
+        #app-shell header {border-bottom:3px solid #f97316;background:linear-gradient(115deg,#101827,#1d2939 60%,#332016)}
+        #creation-screen > div {border-top:4px solid #f97316;box-shadow:0 24px 75px #0008}
+        button {transition:transform .15s,filter .15s}
+        button:active {transform:scale(.985)}
         @keyframes slideUp {
             from { transform: translateY(100%); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
         }
         .animate-slide-up {
             animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* Apresentação rápida e sequencial dos resultados da temporada */
+        @keyframes statReveal {
+            from { opacity: 0; transform: translateY(12px) scale(.985); filter: blur(3px); }
+            to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+        }
+        .season-stat-hidden { opacity: 0; }
+        .season-stat-visible { animation: statReveal .34s ease-out both; }
+        @media (prefers-reduced-motion: reduce) {
+            .season-stat-visible { animation: none; opacity: 1; }
         }
     </style>
 </head>
@@ -49,18 +66,19 @@
     <div id="creation-screen" class="min-h-screen flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 p-6 md:p-8 rounded-2xl max-w-lg w-full shadow-2xl space-y-6">
             <div class="text-center space-y-2">
-                <h1 class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-200">HOOP LEGEND</h1>
-                <p class="text-slate-400 text-sm">Crie seu atleta de 18 anos e inicie a jornada no basquete.</p>
+                <h1 class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-200 court-brand">🏀 HOOP LEGEND</h1>
+                <p data-i18n="subtitle" class="text-slate-400 text-sm">Crie seu atleta de 18 anos e inicie a jornada no basquete.</p>
             </div>
 
+            <div class="space-y-1"><label id="language-label" for="language-select" class="block text-xs font-bold uppercase tracking-wider text-orange-300">🌐 Language</label><select id="language-select" onchange="setLanguage(this.value)" class="w-full bg-slate-800 border border-orange-700/50 rounded-lg px-4 py-3 text-white"><option value="en">English</option><option value="pt-BR">Português (Brasil)</option><option value="es">Español</option><option value="zh-CN">简体中文</option></select></div>
             <form id="creation-form" class="space-y-4">
                 <div>
-                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Nome do Atleta</label>
+                    <label data-i18n="name" class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Nome do Atleta</label>
                     <input type="text" id="input-name" required placeholder="Ex: Caio Simões" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-emerald-500 transition-colors">
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Posição em Quadra</label>
+                    <label data-i18n="position" class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Posição em Quadra</label>
                     <select id="select-pos" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-emerald-500 transition-colors">
                         <option value="PG">PG - Armador (Point Guard)</option>
                         <option value="SG">SG - Ala-Armador (Shooting Guard)</option>
@@ -71,13 +89,12 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Escolha a liga inicial (equipe sorteada automaticamente)</label>
-                    <select id="start-league" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white"><option value="NBB">🇧🇷 NBB — Brasil</option><option value="NCAA">🎓 College — NCAA</option><option value="EuroLiga">🌍 EuroLiga — Europa</option></select>
-                    <p class="text-xs text-slate-400 mt-2">Seu time será sorteado entre equipes da liga escolhida.</p>
-                </div>
+                    <label data-i18n="league" class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Escolha a liga inicial (equipe sorteada automaticamente)</label>
+                    <select id="start-league" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white"><option value="NBB">🇧🇷 NBB — Brasil</option><option value="NCAA">🎓 College — NCAA</option><option value="EuroLiga">🌍 EuroLeague — Europe</option><option value="CBA">🇨🇳 CBA — China</option></select>
+                    <p data-i18n="teamRandom" class="text-xs text-slate-400 mt-2">Seu time será sorteado entre equipes da liga escolhida.</p>
                 </div>
 
-                <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 font-bold rounded-lg text-white shadow-lg shadow-emerald-900/30 transition-all transform active:scale-95">
+                <button data-i18n="start" type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 font-bold rounded-lg text-white shadow-lg shadow-emerald-900/30 transition-all transform active:scale-95">
                     INICIAR CARREIRA (18 ANOS)
                 </button>
             </form>
@@ -108,25 +125,26 @@
                 </div>
             </div>
 
+            <select aria-label="Language" onchange="setLanguage(this.value)" id="dashboard-language" class="bg-slate-800 border border-slate-700 text-white rounded-lg p-2 text-xs"><option value="en">English</option><option value="pt-BR">Português (BR)</option><option value="es">Español</option><option value="zh-CN">简体中文</option></select>
             <!-- CENTRALIZADO: OVR, IDADE E RODADAS -->
             <div class="flex items-center space-x-6 text-sm bg-slate-950/60 px-6 py-2 rounded-2xl border border-slate-800">
                 <div class="text-center">
-                    <p class="text-xs text-slate-400 uppercase font-bold">Idade</p>
+                    <p class="text-xs text-slate-400 uppercase font-bold" data-i18n="age">Idade</p>
                     <p id="ui-player-age" class="text-2xl font-black text-emerald-400">18</p>
                 </div>
                 <div class="h-8 w-px bg-slate-800"></div>
                 <div class="text-center">
-                    <p class="text-xs text-slate-400 uppercase font-bold">OVR Geral</p>
+                    <p class="text-xs text-slate-400 uppercase font-bold" data-i18n="overall">OVR Geral</p>
                     <p id="ui-player-ovr" class="text-2xl font-black text-amber-400">65</p>
                 </div>
                 <div class="h-8 w-px bg-slate-800"></div>
                 <div class="text-center">
-                    <p class="text-xs text-slate-400 uppercase font-bold">Temporada</p>
+                    <p class="text-xs text-slate-400 uppercase font-bold" data-i18n="season">Temporada</p>
                     <p id="ui-player-season" class="text-2xl font-black text-white">1/20</p>
                 </div>
                 <div class="h-8 w-px bg-slate-800"></div>
                 <div class="text-center">
-                    <p class="text-xs text-slate-400 uppercase font-bold">Partida</p>
+                    <p class="text-xs text-slate-400 uppercase font-bold" data-i18n="game">Partida</p>
                     <p id="ui-player-match-num" class="text-2xl font-black text-slate-300">1/36</p>
                 </div>
             </div>
@@ -137,35 +155,35 @@
                 <!-- PRÓXIMO JOGO -->
                 <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
                     <div class="flex justify-between items-center">
-                        <span class="text-xs font-extrabold tracking-wider uppercase bg-emerald-950 text-emerald-400 border border-emerald-800/60 px-3 py-1 rounded-full">Próximo Compromisso</span>
-                        <span id="match-type-badge" class="text-xs text-slate-400 font-medium">Temporada Regular</span>
+                        <span class="text-xs font-extrabold tracking-wider uppercase bg-emerald-950 text-emerald-400 border border-emerald-800/60 px-3 py-1 rounded-full" data-i18n="nextMatch">Próximo Compromisso</span>
+                        <span id="match-type-badge" class="text-xs text-slate-400 font-medium" data-i18n="regularSeason">Temporada Regular</span>
                     </div>
 
                     <div class="flex justify-around items-center py-4 border-y border-slate-800/80">
                         <div class="text-center">
                             <p id="card-team-home" class="text-lg font-bold text-white">Seu Time</p>
-                            <p class="text-xs text-slate-500">MANDANTE</p>
+                            <p class="text-xs text-slate-500" data-i18n="home">MANDANTE</p>
                         </div>
                         <div class="text-2xl font-black text-slate-600">VS</div>
                         <div class="text-center">
                             <p id="card-team-away" class="text-lg font-bold text-slate-300">Adversário</p>
-                            <p class="text-xs text-slate-500">VISITANTE</p>
+                            <p class="text-xs text-slate-500" data-i18n="away">VISITANTE</p>
                         </div>
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                         <button id="btn-play-match" onclick="handleMatchStart()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 font-bold rounded-xl text-white shadow-lg transition-all flex items-center justify-center space-x-2">
-                            <span>▶ JOGAR / SIMULAR PRÓXIMO JOGO</span>
+                            <span data-i18n="next">▶ JOGAR / SIMULAR PRÓXIMO JOGO</span>
                         </button>
                         <button id="btn-sim-season" onclick="simulateFullSeason()" class="w-full py-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 font-bold rounded-xl text-slate-200 transition-all flex items-center justify-center space-x-2">
-                            <span>⚡ SIMULAR TEMPORADA INTEIRA</span>
+                            <span data-i18n="sim">⚡ SIMULAR TEMPORADA INTEIRA</span>
                         </button>
                     </div>
                 </div>
 
                 <!-- CARDS DE STATS -->
                 <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
-                    <h3 class="text-sm font-bold text-slate-300 uppercase tracking-wider">Estatísticas Médias da Temporada</h3>
+                    <h3 data-i18n="stats" class="text-sm font-bold text-slate-300 uppercase tracking-wider">Estatísticas Médias da Temporada</h3>
 
                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
                         <div class="bg-slate-800/50 p-3 rounded-xl border border-slate-700/40">
@@ -205,9 +223,9 @@
 
                 <!-- HISTÓRICO DE TEMPORADAS -->
                 <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
-                    <h3 class="text-sm font-bold text-slate-300 uppercase tracking-wider">Histórico da Carreira</h3>
+                    <h3 data-i18n="history" class="text-sm font-bold text-slate-300 uppercase tracking-wider">Histórico da Carreira</h3>
                     <div id="history-list" class="space-y-3 max-h-48 overflow-y-auto pr-1 text-xs">
-                        <p class="text-slate-500 italic">Nenhuma temporada concluída ainda.</p>
+                        <p class="text-slate-500 italic" data-i18n="noHistory">Nenhuma temporada concluída ainda.</p>
                     </div>
                 </div>
             </div>
@@ -215,7 +233,7 @@
             <div class="space-y-6">
                 <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-3">
                     <h3 class="text-sm font-bold text-slate-300 uppercase tracking-wider flex items-center justify-between">
-                        <span>Feed de Notícias & Jogos</span>
+                        <span data-i18n="news">Feed de Notícias & Jogos</span>
                         <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                     </h3>
                     <div id="log-feed" class="h-64 overflow-y-auto space-y-2 pr-1 font-mono text-xs text-slate-400">
@@ -223,7 +241,7 @@
                     </div>
                 </div>
 
-                <button onclick="retireCareer()" class="w-full py-3 bg-red-950/60 hover:bg-red-900 border border-red-800/60 font-bold rounded-xl text-red-300 transition-all text-sm">
+                <button data-i18n="retire" onclick="retireCareer()" class="w-full py-3 bg-red-950/60 hover:bg-red-900 border border-red-800/60 font-bold rounded-xl text-red-300 transition-all text-sm">
                     🏁 APOSENTAR-SE DA CARREIRA
                 </button>
             </div>
@@ -246,7 +264,7 @@
                 <!-- Conteúdo injetado via JS -->
             </div>
 
-            <button onclick="closeNewsCard()" class="w-full py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 font-black rounded-xl text-white shadow-lg uppercase tracking-wider text-sm transition-all">
+            <button onclick="closeNewsCard()" class="w-full py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 font-black rounded-xl text-white shadow-lg uppercase tracking-wider text-sm transition-all" data-i18n="continue">
                 CONTINUAR
             </button>
         </div>
@@ -268,7 +286,7 @@
     <!-- MODAL DE DILEMA DE CARREIRA -->
     <div id="modal-dilemma" class="hidden fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 p-4 flex flex-col items-center justify-center">
         <div class="max-w-md w-full bg-slate-900 border border-purple-500/40 rounded-2xl p-6 shadow-2xl space-y-5 text-center">
-            <span class="px-3 py-1 bg-purple-500/10 text-purple-400 border border-purple-500/30 font-bold text-xs rounded-full">⚖️ DILEMA DE CARREIRA</span>
+            <span class="px-3 py-1 bg-purple-500/10 text-purple-400 border border-purple-500/30 font-bold text-xs rounded-full" data-i18n="dilemmaHeading">⚖️ DILEMA DE CARREIRA</span>
             <h3 id="dilemma-title" class="text-xl font-extrabold text-white">Título do Dilema</h3>
             <p id="dilemma-desc" class="text-sm text-slate-300">Descrição do dilema...</p>
 
@@ -278,42 +296,53 @@
         </div>
     </div>
 
+    <!-- RESULTADO DO DILEMA -->
+    <div id="modal-dilemma-result" class="hidden fixed inset-0 bg-slate-950/95 backdrop-blur-lg z-[60] p-4 flex items-center justify-center">
+      <div class="w-full max-w-md bg-slate-900 border-2 border-orange-500/60 rounded-2xl p-7 text-center shadow-2xl space-y-4">
+        <div class="text-5xl" id="dilemma-result-icon">🏀</div>
+        <div id="dilemma-result-kicker" class="text-xs font-black tracking-widest text-orange-400 uppercase">DECISION RESULT</div>
+        <h3 id="dilemma-result-title" class="text-2xl font-black text-white">Decision resolved</h3>
+        <p id="dilemma-result-description" class="text-sm text-slate-300"></p>
+        <div class="bg-slate-950 border border-slate-700 rounded-xl p-4 flex justify-around"><div><div class="text-xs text-slate-400" data-i18n="ovrBefore">OVR BEFORE</div><strong id="dilemma-result-before" class="text-2xl">0</strong></div><div class="text-2xl text-orange-400">➜</div><div><div class="text-xs text-slate-400" data-i18n="ovrAfter">OVR AFTER</div><strong id="dilemma-result-after" class="text-2xl text-orange-400">0</strong></div></div>
+        <button id="dilemma-result-continue" onclick="continueAfterDilemmaResult()" class="w-full py-3 bg-orange-600 hover:bg-orange-500 font-black rounded-xl">CONTINUE CAREER</button>
+      </div>
+    </div>
     <!-- MODAL DE PRÉ-TEMPORADA -->
     <div id="pre-season-screen" class="hidden fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 p-4 md:p-8 flex flex-col items-center justify-center">
         <div class="max-w-xl w-full bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-6">
             <div class="text-center space-y-2">
-                <h2 class="text-2xl font-black text-amber-400">CAMPO DE TREINAMENTO DA PRÉ-TEMPORADA</h2>
-                <p id="pre-season-age-info" class="text-sm text-slate-300">Escolha seu foco de treinamento para este ciclo:</p>
+                <h2 class="text-2xl font-black text-amber-400" data-i18n="training">CAMPO DE TREINAMENTO DA PRÉ-TEMPORADA</h2>
+                <p id="pre-season-age-info" class="text-sm text-slate-300" data-i18n="trainChoose">Escolha seu foco de treinamento para este ciclo:</p>
             </div>
 
             <div id="training-options" class="space-y-3">
                 <button onclick="selectTraining('scoring')" class="w-full p-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-left transition-all">
-                    <p class="font-bold text-amber-400 text-sm">🔥 Foco em Arremesso & Pontuação</p>
-                    <p class="text-xs text-slate-400 mt-1">Aumenta volume de chutes, eficiência em bolas de 3 e pontuação geral (Permite Superestrela 27+ PPG).</p>
+                    <p class="font-bold text-amber-400 text-sm" data-i18n="trainingScore">🔥 Foco em Arremesso & Pontuação</p>
+                    <p class="text-xs text-slate-400 mt-1" data-i18n="trainingScoreDesc">Aumenta volume de chutes, eficiência em bolas de 3 e pontuação geral (Permite Superestrela 27+ PPG).</p>
                 </button>
                 <button onclick="selectTraining('passing')" class="w-full p-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-left transition-all">
-                    <p class="font-bold text-emerald-400 text-sm">🎯 Foco em Passe & Visão de Jogo</p>
-                    <p class="text-xs text-slate-400 mt-1">Aumenta +1 em assistências por jogo (Permite equiparar às médias da posição, respeitando o limite do OVR).</p>
+                    <p class="font-bold text-emerald-400 text-sm" data-i18n="trainingPass">🎯 Foco em Passe & Visão de Jogo</p>
+                    <p class="text-xs text-slate-400 mt-1" data-i18n="trainingPassDesc">Aumenta +1 em assistências por jogo (Permite equiparar às médias da posição, respeitando o limite do OVR).</p>
                 </button>
                 <button onclick="selectTraining('rebounding')" class="w-full p-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-left transition-all">
-                    <p class="font-bold text-blue-400 text-sm">🛡️ Foco em Rebotes & Garrafão</p>
-                    <p class="text-xs text-slate-400 mt-1">Aumenta +1 em rebotes por jogo (Permite equiparar às médias da posição, respeitando o limite do OVR).</p>
+                    <p class="font-bold text-blue-400 text-sm" data-i18n="trainingReb">🛡️ Foco em Rebotes & Garrafão</p>
+                    <p class="text-xs text-slate-400 mt-1" data-i18n="trainingRebDesc">Aumenta +1 em rebotes por jogo (Permite equiparar às médias da posição, respeitando o limite do OVR).</p>
                 </button>
                 <button onclick="selectTraining('defense')" class="w-full p-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-left transition-all">
-                    <p class="font-bold text-purple-400 text-sm">🔒 Foco em Defesa & Roubos</p>
-                    <p class="text-xs text-slate-400 mt-1">Intensifica a marcação individual, gerando roubos de bola (+1 SPG) e bloqueios (+1 BPG).</p>
+                    <p class="font-bold text-purple-400 text-sm" data-i18n="trainingDef">🔒 Foco em Defesa & Roubos</p>
+                    <p class="text-xs text-slate-400 mt-1" data-i18n="trainingDefDesc">Intensifica a marcação individual, gerando roubos de bola (+1 SPG) e bloqueios (+1 BPG).</p>
                 </button>
             </div>
         </div>
     </div>
 
     <!-- MODAL DE MERCADO E CONTRATOS (FREE AGENCY / DRAFT) -->
-    <div id="modal-market" class="hidden fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div id="modal-market" class="hidden fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
         <div class="max-w-lg w-full bg-slate-900 border border-emerald-500/40 rounded-2xl p-6 shadow-2xl space-y-4 text-center">
-            <h3 id="market-title" class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-emerald-400">FREE AGENCY & MERCADO DE CONTRATOS</h3>
-            <p id="market-desc" class="text-sm text-slate-300">Seu contrato atual expirou! Escolha seu próximo destino:</p>
+            <h3 id="market-title" class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-emerald-400" data-i18n="market">FREE AGENCY & MERCADO DE CONTRATOS</h3>
+            <p id="market-desc" class="text-sm text-slate-300" data-i18n="marketExpired">Seu contrato atual expirou! Escolha seu próximo destino:</p>
 
-            <div id="market-options" class="space-y-3 pt-2 text-left">
+            <div id="market-options" class="space-y-3 pt-2 text-left max-h-[55vh] overflow-y-auto pr-2">
                 <!-- Injetado por JS -->
             </div>
         </div>
@@ -325,18 +354,18 @@
             <h3 id="summary-title" class="text-2xl font-black text-center text-amber-400">RESUMO DA TEMPORADA 1</h3>
 
             <div class="bg-slate-950 p-4 rounded-xl space-y-2 text-sm border border-slate-800">
-                <p class="flex justify-between"><span class="text-slate-400">Campanha do Time:</span> <strong id="summary-team-record" class="text-amber-400">24 - 12</strong></p>
-                <p class="flex justify-between"><span class="text-slate-400">Resultado nos Playoffs:</span> <strong id="summary-team-result" class="text-emerald-400">Campeão</strong></p>
-                <p class="flex justify-between"><span class="text-slate-400">Médias do Atleta:</span> <strong id="summary-player-stats" class="text-white">12.5 PPG | 4.2 APG</strong></p>
-                <p class="flex justify-between"><span class="text-slate-400">Aproveitamento:</span> <strong id="summary-player-fg" class="text-amber-400">44.5% FG</strong></p>
+                <p class="flex justify-between"><span class="text-slate-400" data-i18n="clubRecord">Campanha do Time:</span> <strong id="summary-team-record" class="text-amber-400">24 - 12</strong></p>
+                <p class="flex justify-between"><span class="text-slate-400" data-i18n="playoffResult">Resultado nos Playoffs:</span> <strong id="summary-team-result" class="text-emerald-400">Campeão</strong></p>
+                <p class="flex justify-between"><span class="text-slate-400" data-i18n="playerAverages">Médias do Atleta:</span> <strong id="summary-player-stats" class="text-white">12.5 PPG | 4.2 APG</strong></p>
+                <p class="flex justify-between"><span class="text-slate-400" data-i18n="shooting">Aproveitamento:</span> <strong id="summary-player-fg" class="text-amber-400">44.5% FG</strong></p>
             </div>
 
             <div class="space-y-2">
-                <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Prêmios Individuais Conquistados:</h4>
+                <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider" data-i18n="earnedAwards">Prêmios Individuais Conquistados:</h4>
                 <div id="summary-awards" class="flex flex-wrap gap-2"></div>
             </div>
 
-            <button onclick="proceedAfterSummary()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 font-bold rounded-xl text-white shadow-lg">
+            <button onclick="proceedAfterSummary()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 font-bold rounded-xl text-white shadow-lg" data-i18n="continue">
                 CONTINUAR
             </button>
         </div>
@@ -351,7 +380,7 @@
                 <!-- CABEÇALHO DO RESUMO -->
                 <div class="flex flex-wrap justify-between items-center bg-slate-950 p-5 rounded-2xl border border-slate-800 gap-4">
                     <div class="space-y-1">
-                        <p class="text-xs font-bold text-slate-500 uppercase tracking-widest">Carreira Finalizada</p>
+                        <p class="text-xs font-bold text-slate-500 uppercase tracking-widest" data-i18n="careerRetired">Carreira Finalizada</p>
                         <h2 id="c-name" class="text-2xl sm:text-3xl font-black text-white">Nome do Atleta</h2>
                         <p class="text-xs text-amber-400 font-bold" id="c-tier">GOAT 🐐</p>
                     </div>
@@ -371,23 +400,24 @@
                 <!-- TIMES JOGADOS E TÍTULOS POR LIGA -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
-                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Times da Carreira</p>
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider" data-i18n="careerTeams">Times da Carreira</p>
                         <div id="c-teams-list" class="flex flex-wrap gap-1.5 text-xs"></div>
                     </div>
                     <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
-                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Títulos por Liga</p>
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider" data-i18n="careerTitles">Títulos por Liga</p>
                         <div id="c-titles-list" class="space-y-1 text-xs text-slate-300"></div>
                     </div>
                 </div>
 
                 <!-- MÉDIAS GERAIS DA CARREIRA -->
                 <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
-                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Médias Gerais da Carreira</p>
-                    <div class="grid grid-cols-2 sm:grid-cols-6 gap-2 text-center text-xs">
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider" data-i18n="careerAverages">Médias Gerais da Carreira</p>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 text-center text-xs">
                         <div class="bg-slate-900 p-2 rounded-xl border border-slate-800"><span class="text-slate-400 block text-[10px]">PPG</span><strong id="c-avg-ppg" class="text-white text-base">0.0</strong></div>
                         <div class="bg-slate-900 p-2 rounded-xl border border-slate-800"><span class="text-slate-400 block text-[10px]">RPG</span><strong id="c-avg-rpg" class="text-white text-base">0.0</strong></div>
                         <div class="bg-slate-900 p-2 rounded-xl border border-slate-800"><span class="text-slate-400 block text-[10px]">APG</span><strong id="c-avg-apg" class="text-white text-base">0.0</strong></div>
                         <div class="bg-slate-900 p-2 rounded-xl border border-slate-800"><span class="text-slate-400 block text-[10px]">SPG</span><strong id="c-avg-spg" class="text-white text-base">0.0</strong></div>
+                        <div class="bg-slate-900 p-2 rounded-xl border border-slate-800"><span class="text-slate-400 block text-[10px]">BPG</span><strong id="c-avg-bpg" class="text-white text-base">0.0</strong></div>
                         <div class="bg-slate-900 p-2 rounded-xl border border-slate-800"><span class="text-emerald-400 block text-[10px]">FG%</span><strong id="c-avg-fg" class="text-emerald-400 text-base">0%</strong></div>
                         <div class="bg-slate-900 p-2 rounded-xl border border-slate-800"><span class="text-amber-400 block text-[10px]">3P%</span><strong id="c-avg-3p" class="text-amber-400 text-base">0%</strong></div>
                     </div>
@@ -395,24 +425,24 @@
 
                 <!-- PRÊMIOS INDIVIDUAIS E CONTAGEM -->
                 <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
-                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Prêmios Individuais</p>
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider" data-i18n="careerAwards">Prêmios Individuais</p>
                     <div id="c-awards-list" class="flex flex-wrap gap-2 text-xs"></div>
                 </div>
 
                 <!-- TABELA COMPARATIVA ANO A ANO -->
                 <div class="space-y-2">
-                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Desempenho Ano a Ano</h3>
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider" data-i18n="careerYearly">Desempenho Ano a Ano</h3>
                     <div class="bg-slate-950 rounded-2xl border border-slate-800 overflow-x-auto overflow-y-auto max-h-64 shadow-inner">
                         <table class="w-full text-left text-xs min-w-[640px]">
                             <thead class="bg-slate-900 text-slate-400 uppercase font-bold border-b border-slate-800 sticky top-0 z-10">
                                 <tr>
-                                    <th class="p-3">Temp</th>
-                                    <th class="p-3">Idade</th>
-                                    <th class="p-3">Liga / Time</th>
+                                    <th class="p-3" data-i18n="tableTemp">Temp</th>
+                                    <th class="p-3" data-i18n="tableIdade">Idade</th>
+                                    <th class="p-3" data-i18n="tableLigaTime">Liga / Time</th>
                                     <th class="p-3">OVR</th>
-                                    <th class="p-3">Campanha</th>
-                                    <th class="p-3">Médias</th>
-                                    <th class="p-3">Prêmios</th>
+                                    <th class="p-3" data-i18n="tableCampanha">Campanha</th>
+                                    <th class="p-3" data-i18n="tableMédias">Médias</th>
+                                    <th class="p-3" data-i18n="tablePrêmios">Prêmios</th>
                                 </tr>
                             </thead>
                             <tbody id="c-yearly-table" class="divide-y divide-slate-800/60 text-slate-300">
@@ -425,7 +455,7 @@
 
             <!-- BOTÃO FIXO NO RODAPÉ DO MODAL -->
             <div class="pt-2 border-t border-slate-800/80 shrink-0">
-                <button onclick="restartCareer()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 font-black rounded-2xl text-white shadow-lg transition-all text-sm">
+                <button onclick="restartCareer()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 font-black rounded-2xl text-white shadow-lg transition-all text-sm" data-i18n="newCareer">
                     JOGAR NOVAMENTE 🏀
                 </button>
             </div>
@@ -438,7 +468,7 @@
         const NBB_TEAMS = [
             'Flamengo Basquete', 'Sesi Franca', 'São Paulo FC', 
             'Minas Tênis Clube', 'Paulistano', 'Bauru Basquete',
-            'Unifacisa', 'Fortaleza Car规模/BC', 'Pato Basquete',
+            'Unifacisa', 'Fortaleza Basquete Cearense', 'Pato Basquete',
             'R10 Score Vasco da Gama', 'Botafogo', 'Corinthians',
             'Pinheiros', 'Mogi Basquete', 'Caxias do Sul Basquete',
             'União Corinthians', 'BRB / Brasília Basquete', 'Cerrado Basquete',
@@ -450,6 +480,11 @@
         const EURO_TEAMS = [
             'Real Madrid', 'FC Barcelona', 'Fenerbahçe', 'Olympiacos', 'Monaco', 'Panathinaikos'
         ];
+
+        const CBA_TEAMS = ['Liaoning Flying Leopards','Guangdong Southern Tigers','Beijing Ducks','Shanghai Sharks','Zhejiang Golden Bulls','Xinjiang Flying Tigers','Shenzhen Leopards','Guangsha Lions','Shandong Heroes','Qingdao Eagles','Nanjing Monkey Kings','Jilin Northeast Tigers','Tianjin Pioneers','Fujian Sturgeons','Sichuan Blue Whales','Beijing Royal Fighters','Guangzhou Loong Lions','Ningbo Rockets','Jiangsu Dragons','Shanxi Loongs'];
+        const LEAGUE_GAMES = {NBA:82,NBB:36,NCAA:32,EuroLiga:34,CBA:46};
+        const gamesForLeague = league => LEAGUE_GAMES[league] || 36;
+        const randomTeam = (teams, excluded) => { const options=teams.filter(x=>x!==excluded); return options[Math.floor(Math.random()*options.length)] || teams[0]; };
 
         // LISTA COMPLETA DOS 30 TIMES DA NBA
         const NBA_TEAMS = [
@@ -482,6 +517,9 @@
                 maxTargetOvr: 80,
                 trainingFocus: 'scoring',
                 hasWonMIP: false,
+                sixthManOvrBonusUsed: false,
+                mipOvrBonusUsed: false,
+                mvpOvrBonusUsed: false,
                 seasonStats: { pts: 0, ast: 0, reb: 0, stl: 0, blk: 0, fgm: 0, fga: 0, fg3m: 0, fg3a: 0, games: 0, wins: 0 },
                 prevSeasonStats: { ppg: 0, apg: 0, rpg: 0 },
                 trophies: [],
@@ -495,6 +533,96 @@
                 tradesCount: 0 // Limite de no máximo 5 trocas na carreira
             }
         };
+
+
+        const LANGUAGES = {
+          en:{subtitle:'Create your 18-year-old player and start your basketball journey.',name:'Player Name',position:'Court Position',league:'Choose your starting league (random team)',teamRandom:'Your team will be randomly selected from the chosen league.',start:'START CAREER (AGE 18)',next:'▶ PLAY / SIMULATE NEXT GAME',sim:'⚡ SIMULATE FULL SEASON',stats:'Season Averages',history:'Career History',news:'News & Game Feed',retire:'🏁 RETIRE FROM BASKETBALL',continue:'CONTINUE',continueCareer:'CONTINUE CAREER',decisionResult:'DECISION RESULT',resultPositive:'Great outcome!',resultNegative:'A tough setback',resultNeutral:'Decision completed',resultDescription:'Your decision changed your overall by {delta} points. Your career continues with this consequence.',renew:'Renew with',years:'years',stayChina:'Continue your career in China.',goChina:'Go to China',goBrazil:'Go to Brazil',goEurope:'Go to Europe',chinaOffer:'A new challenge in the Chinese Basketball Association.',brazilOffer:'Play in the Brazilian league.',europeOffer:'Compete in European basketball.',training:'PRESEASON TRAINING CAMP',market:'FREE AGENCY & CONTRACT MARKET',summary:'INDIVIDUAL AWARDS',create:'CREATE PLAYER',welcome:'WELCOME TO HOOP LEGEND!',season:'SEASON',age:'Age',game:'Game',role:'Status',contract:'Contract',score:'Points',assists:'Assists',rebounds:'Rebounds',record:'Record',"marketExpired":"Your contract has expired! Choose your next destination:","marketTransfer":"Transfer to {team} (NCAA)","marketCollegeDesc":"Another college season.","marketNBA":"NBA: {team} ({role})","marketNbaOffer":"NBA offer: {team} ({role} · 3 years)","marketNbaSign":"Sign with {team} ({role} · 3 years)","marketRenew":"Renew with {team} ({years} years)","marketSign":"Sign with {team} ({years} years)","marketMove":"Transfer to {team} ({years} years)","marketEuro":"EuroLeague: {team}","marketNBB":"Brazilian NBB: {team}","marketEuroOffer":"Sign with {team} (EuroLeague · {years} years)","marketBrazilOffer":"Go to Brazil: {team} (NBB · 2 years)","marketChinaOffer":"Go to China: {team} (CBA · 2 years)","marketEuropeOffer":"Go to Europe: {team}","marketRenewDesc":"Stay with your current team.","marketSwitchDesc":"A fresh start with another team.","marketEuroDesc":"Take your game to Europe.","marketNbbDesc":"Begin your professional career in Brazil.","marketProEuropeDesc":"Begin your professional career in Europe.","marketStayBrazilDesc":"Stay a fan favorite in Brazil.","marketChangeBrazilDesc":"Join another Brazilian team.","marketStayEuropeDesc":"Stay with your European club.","marketReturnBrazilDesc":"Return to Brazilian basketball.","marketLastBrazilDesc":"Finish your career playing in Brazil.","marketNBAStayDesc":"Stay with your NBA franchise.","marketNbaDecline":"NBA teams are no longer offering you a contract at this age and overall.","roleContender":"Title Contender","roleMedian":"Competitive Team","roleRebuild":"Rebuilding Team","roleContenderDesc":"Compete for the title, with tough competition for minutes.","roleMedianDesc":"Balanced roster with a chance to grow and reach the playoffs.","roleRebuildDesc":"Development project with more playing-time opportunities.","seasonSummary":"SEASON {season} RECAP (AGE {age})","noAwards":"No individual awards this season.","noAwardsCareer":"No individual awards in your career.","roleStarter":"Starter","roleBench":"Bench Player","roleStar":"Star","roleSuperstar":"Superstar","roleAbsolute":"Undisputed Starter","roleLabel":"Status: {role}","contractLabel":"Contract: {years} year(s) left","noHistory":"No completed seasons yet.","newSeason":"NEW SEASON","seasonStarted":"SEASON {season} STARTED!","gameWon":"WIN","gameLost":"LOSS","ageYears":"{age} years old","careerLegend":"League Legend ⭐","careerStarter":"Reliable Starter 🏀","careerRetired":"Career Complete","careerTeams":"Career Teams","careerTitles":"League Titles","careerAverages":"Career Averages","careerAwards":"Individual Awards","careerYearly":"Season-by-Season Performance","playoffResult":"Playoff Result:","clubRecord":"Team Record:","playerAverages":"Player Averages:","shooting":"Shooting:","earnedAwards":"Individual Awards Earned:","newCareer":"PLAY AGAIN 🏀","nextMatch":"Next Game","regularSeason":"Regular Season","home":"HOME","away":"AWAY","preseasonInfo":"Season {season} (age {age}) · Training cycle","startFresh":"Start a new career? Your saved progress will be deleted.","simError":"Simulation error. Progress saved; please try again.","dilemma1Title":"Signature Shoe Deal","dilemma1Desc":"A major brand offers a lucrative deal, but demands exhausting late-night training.","dilemma1a":"Accept the extra training (70% +2 OVR, 30% -1 OVR)","dilemma1b":"Decline and maintain a light routine (no OVR change)","dilemma2Title":"Conflict with the Coach","dilemma2Desc":"The coach wants you to play a more defensive role. Will you challenge him or cooperate?","dilemma2a":"Demand offensive freedom (60% +3 OVR, 40% -2 OVR)","dilemma2b":"Accept the role and help the team (80% +1 OVR, 20% unchanged)","dilemma3Title":"European Summer Training Invitation","dilemma3Desc":"Train with European legends during the break, at the risk of fatigue.","dilemma3a":"Travel and train hard (60% +2 OVR, 40% -1 OVR)","dilemma3b":"Rest and recover (no OVR change)","dilemma4Title":"Leadership Role Behind the Scenes","dilemma4Desc":"Management asks you to mentor rookies, requiring extra tactical study.","dilemma4a":"Mentor the rookies (75% +2 OVR, 25% unchanged)","dilemma4b":"Focus on yourself (50% +1 OVR, 50% -1 OVR)"},
+          'pt-BR':{subtitle:'Crie seu atleta de 18 anos e inicie a jornada no basquete.',name:'Nome do Atleta',position:'Posição em Quadra',league:'Escolha a liga inicial (time sorteado)',teamRandom:'Seu time será sorteado entre equipes da liga escolhida.',start:'INICIAR CARREIRA (18 ANOS)',next:'▶ JOGAR / SIMULAR PRÓXIMO JOGO',sim:'⚡ SIMULAR TEMPORADA INTEIRA',stats:'Estatísticas Médias da Temporada',history:'Histórico da Carreira',news:'Feed de Notícias & Jogos',retire:'🏁 APOSENTAR-SE DA CARREIRA',continue:'CONTINUAR',continueCareer:'CONTINUAR CARREIRA',decisionResult:'RESULTADO DO DILEMA',resultPositive:'Ótimo resultado!',resultNegative:'Consequência negativa',resultNeutral:'Decisão concluída',resultDescription:'Sua decisão alterou o Overall em {delta} pontos. Sua carreira seguirá com essa consequência.',renew:'Renovar com',years:'anos',stayChina:'Continuar sua carreira na China.',goChina:'Ir para a China',goBrazil:'Ir para o Brasil',goEurope:'Ir para a Europa',chinaOffer:'Novo desafio na liga chinesa de basquete.',brazilOffer:'Jogar na liga brasileira.',europeOffer:'Disputar o basquete europeu.',training:'CAMPO DE TREINAMENTO DA PRÉ-TEMPORADA',market:'FREE AGENCY & MERCADO DE CONTRATOS',summary:'PRÊMIOS INDIVIDUAIS',welcome:'BEM-VINDO AO HOOP LEGEND!',season:'TEMPORADA',age:'Idade',game:'Partida',role:'Status',contract:'Contrato',score:'Pontos',assists:'Assistências',rebounds:'Rebotes',record:'Campanha',"marketExpired":"Seu contrato atual expirou! Escolha seu próximo destino:","marketTransfer":"Transferir para {team} (NCAA)","marketCollegeDesc":"Mais uma temporada universitária.","marketNBA":"NBA: {team} ({role})","marketNbaOffer":"Proposta NBA: {team} ({role} · 3 anos)","marketNbaSign":"Assinar com {team} ({role} · 3 anos)","marketRenew":"Renovar com {team} ({years} anos)","marketSign":"Assinar com {team} ({years} anos)","marketMove":"Transferir para {team} ({years} anos)","marketEuro":"Euroliga: {team}","marketNBB":"NBB brasileira: {team}","marketEuroOffer":"Assinar com {team} (Euroliga · {years} anos)","marketBrazilOffer":"Ir para o Brasil: {team} (NBB · 2 anos)","marketChinaOffer":"Ir para a China: {team} (CBA · 2 anos)","marketEuropeOffer":"Ir para a Europa: {team}","marketRenewDesc":"Permanecer na equipe atual.","marketSwitchDesc":"Um novo começo em outra equipe.","marketEuroDesc":"Novo desafio no basquete europeu.","marketNbbDesc":"Iniciar carreira profissional no Brasil.","marketProEuropeDesc":"Iniciar carreira profissional na Europa.","marketStayBrazilDesc":"Permanecer como ídolo da torcida no Brasil.","marketChangeBrazilDesc":"Trocar de equipe no basquete nacional.","marketStayEuropeDesc":"Permanência no clube europeu.","marketReturnBrazilDesc":"Voltar ao basquete brasileiro.","marketLastBrazilDesc":"Encerrar sua carreira jogando no Brasil.","marketNBAStayDesc":"Permanecer na franquia atual da NBA.","marketNbaDecline":"Franquias da NBA não oferecem contrato nesta idade e Overall.","roleContender":"Candidato ao Título","roleMedian":"Equipe Competitiva","roleRebuild":"Reconstrução","roleContenderDesc":"Disputar o título, com forte concorrência por minutos.","roleMedianDesc":"Equipe equilibrada com oportunidade de crescer e disputar playoffs.","roleRebuildDesc":"Projeto de desenvolvimento com espaço para conquistar minutos.","seasonSummary":"RESUMO DA TEMPORADA {season} ({age} ANOS)","noAwards":"Nenhum prêmio individual nesta temporada.","noAwardsCareer":"Nenhum prêmio individual na carreira.","roleStarter":"Titular","roleBench":"Reserva","roleStar":"Estrela","roleSuperstar":"Superestrela","roleAbsolute":"Titular Absoluto","roleLabel":"Status: {role}","contractLabel":"Contrato: {years} ano(s) rest.","noHistory":"Nenhuma temporada concluída ainda.","newSeason":"NOVA TEMPORADA","seasonStarted":"TEMPORADA {season} INICIADA!","gameWon":"VITÓRIA","gameLost":"DERROTA","ageYears":"{age} anos","careerLegend":"Lenda da Liga ⭐","careerStarter":"Titular Consistente 🏀","careerRetired":"Carreira Finalizada","careerTeams":"Times da Carreira","careerTitles":"Títulos por Liga","careerAverages":"Médias Gerais da Carreira","careerAwards":"Prêmios Individuais","careerYearly":"Desempenho Ano a Ano","playoffResult":"Resultado nos Playoffs:","clubRecord":"Campanha do Time:","playerAverages":"Médias do Atleta:","shooting":"Aproveitamento:","earnedAwards":"Prêmios Individuais Conquistados:","newCareer":"JOGAR NOVAMENTE 🏀","nextMatch":"Próximo Compromisso","regularSeason":"Temporada Regular","home":"MANDANTE","away":"VISITANTE","preseasonInfo":"Temporada {season} ({age} anos) · Ciclo de treinamento","startFresh":"Iniciar uma nova carreira? O progresso salvo será apagado.","simError":"Erro ao simular. Progresso salvo; tente novamente.","dilemma1Title":"Proposta de Tênis Signature","dilemma1Desc":"Uma grande marca oferece um contrato milionário, mas exige treinos extras exaustivos durante a madrugada.","dilemma1a":"Aceitar os treinos exaustivos (70% +2 OVR, 30% -1 OVR)","dilemma1b":"Recusar e manter rotina leve (sem alteração)","dilemma2Title":"Conflito com o Treinador","dilemma2Desc":"O técnico quer mudar sua função tática para um estilo mais defensivo. Você bate de frente ou obedece?","dilemma2a":"Exigir liberdade ofensiva (60% +3 OVR, 40% -2 OVR)","dilemma2b":"Aceitar a função e ajudar o time (80% +1 OVR, 20% sem alteração)","dilemma3Title":"Convite para Treinos de Verão na Europa","dilemma3Desc":"Treinar com lendas europeias nas férias, com risco de desgaste físico.","dilemma3a":"Viajar e treinar pesado (60% +2 OVR, 40% -1 OVR)","dilemma3b":"Descansar e recuperar (sem alteração)","dilemma4Title":"Proposta de Liderança nos Bastidores","dilemma4Desc":"A diretoria pede para você orientar os novatos, exigindo estudo tático adicional.","dilemma4a":"Orientar os novatos (75% +2 OVR, 25% sem alteração)","dilemma4b":"Focar no próprio rendimento (50% +1 OVR, 50% -1 OVR)"},
+          es:{subtitle:'Crea a tu jugador de 18 años y comienza tu carrera de baloncesto.',name:'Nombre del jugador',position:'Posición',league:'Elige la liga inicial (equipo aleatorio)',teamRandom:'Tu equipo se seleccionará al azar.',start:'COMENZAR CARRERA (18 AÑOS)',next:'▶ JUGAR / SIMULAR PARTIDO',sim:'⚡ SIMULAR TEMPORADA COMPLETA',stats:'Promedios de la temporada',history:'Historial de carrera',news:'Noticias y partidos',retire:'🏁 RETIRARSE',continue:'CONTINUAR',continueCareer:'CONTINUAR CARRERA',decisionResult:'RESULTADO DE LA DECISIÓN',resultPositive:'¡Gran resultado!',resultNegative:'Consecuencia negativa',resultNeutral:'Decisión completada',resultDescription:'Tu decisión cambió el nivel general en {delta} puntos. La carrera continúa con esta consecuencia.',renew:'Renovar con',years:'años',stayChina:'Continuar tu carrera en China.',goChina:'Ir a China',goBrazil:'Ir a Brasil',goEurope:'Ir a Europa',chinaOffer:'Un nuevo desafío en la liga china.',brazilOffer:'Jugar en la liga brasileña.',europeOffer:'Competir en Europa.',training:'ENTRENAMIENTO DE PRETEMPORADA',market:'AGENCIA LIBRE Y CONTRATOS',summary:'PREMIOS INDIVIDUALES',welcome:'¡BIENVENIDO A HOOP LEGEND!',season:'TEMPORADA',age:'Edad',game:'Partido',role:'Estado',contract:'Contrato',score:'Puntos',assists:'Asistencias',rebounds:'Rebotes',record:'Récord',"marketExpired":"¡Tu contrato ha terminado! Elige tu próximo destino:","marketTransfer":"Transferirse a {team} (NCAA)","marketCollegeDesc":"Otra temporada universitaria.","marketNBA":"NBA: {team} ({role})","marketNbaOffer":"Oferta NBA: {team} ({role} · 3 años)","marketNbaSign":"Fichar por {team} ({role} · 3 años)","marketRenew":"Renovar con {team} ({years} años)","marketSign":"Fichar por {team} ({years} años)","marketMove":"Transferirse a {team} ({years} años)","marketEuro":"Euroliga: {team}","marketNBB":"Liga brasileña NBB: {team}","marketEuroOffer":"Fichar por {team} (Euroliga · {years} años)","marketBrazilOffer":"Ir a Brasil: {team} (NBB · 2 años)","marketChinaOffer":"Ir a China: {team} (CBA · 2 años)","marketEuropeOffer":"Ir a Europa: {team}","marketRenewDesc":"Permanecer en tu equipo actual.","marketSwitchDesc":"Un nuevo comienzo en otro equipo.","marketEuroDesc":"Un nuevo desafío en Europa.","marketNbbDesc":"Comenzar tu carrera profesional en Brasil.","marketProEuropeDesc":"Comenzar tu carrera profesional en Europa.","marketStayBrazilDesc":"Seguir siendo ídolo de la afición en Brasil.","marketChangeBrazilDesc":"Cambiar de equipo en Brasil.","marketStayEuropeDesc":"Permanecer en tu club europeo.","marketReturnBrazilDesc":"Regresar al baloncesto brasileño.","marketLastBrazilDesc":"Terminar tu carrera jugando en Brasil.","marketNBAStayDesc":"Permanecer en tu franquicia NBA.","marketNbaDecline":"Los equipos NBA ya no ofrecen contrato con esta edad y valoración.","roleContender":"Candidato al Título","roleMedian":"Equipo Competitivo","roleRebuild":"Reconstrucción","roleContenderDesc":"Luchar por el título, con fuerte competencia por minutos.","roleMedianDesc":"Plantilla equilibrada con opciones de crecer y llegar a playoffs.","roleRebuildDesc":"Proyecto de desarrollo con más oportunidades de jugar.","seasonSummary":"RESUMEN TEMPORADA {season} ({age} AÑOS)","noAwards":"Sin premios individuales esta temporada.","noAwardsCareer":"Sin premios individuales en tu carrera.","roleStarter":"Titular","roleBench":"Suplente","roleStar":"Estrella","roleSuperstar":"Superestrella","roleAbsolute":"Titular Indiscutible","roleLabel":"Estado: {role}","contractLabel":"Contrato: {years} año(s) restante(s)","noHistory":"Todavía no hay temporadas completadas.","newSeason":"NUEVA TEMPORADA","seasonStarted":"¡TEMPORADA {season} INICIADA!","gameWon":"VICTORIA","gameLost":"DERROTA","ageYears":"{age} años","careerLegend":"Leyenda de la Liga ⭐","careerStarter":"Titular Consolidado 🏀","careerRetired":"Carrera Finalizada","careerTeams":"Equipos de Carrera","careerTitles":"Títulos por Liga","careerAverages":"Promedios de Carrera","careerAwards":"Premios Individuales","careerYearly":"Rendimiento Año a Año","playoffResult":"Resultado en Playoffs:","clubRecord":"Récord del Equipo:","playerAverages":"Promedios del Jugador:","shooting":"Porcentajes de Tiro:","earnedAwards":"Premios Individuales Ganados:","newCareer":"JUGAR DE NUEVO 🏀","nextMatch":"Próximo Partido","regularSeason":"Temporada Regular","home":"LOCAL","away":"VISITANTE","preseasonInfo":"Temporada {season} ({age} años) · Ciclo de entrenamiento","startFresh":"¿Empezar una nueva carrera? Se borrará el progreso guardado.","simError":"Error de simulación. Progreso guardado; inténtalo de nuevo.","dilemma1Title":"Contrato de Zapatillas Exclusivas","dilemma1Desc":"Una gran marca ofrece un contrato millonario, pero exige entrenamientos nocturnos agotadores.","dilemma1a":"Aceptar entrenamientos extra (70% +2 OVR, 30% -1 OVR)","dilemma1b":"Rechazar y mantener rutina ligera (sin cambios)","dilemma2Title":"Conflicto con el Entrenador","dilemma2Desc":"El entrenador quiere que juegues un papel más defensivo. ¿Te enfrentas o colaboras?","dilemma2a":"Exigir libertad ofensiva (60% +3 OVR, 40% -2 OVR)","dilemma2b":"Aceptar el papel y ayudar al equipo (80% +1 OVR, 20% sin cambios)","dilemma3Title":"Invitación a Entrenar en Europa","dilemma3Desc":"Entrenar con leyendas europeas en vacaciones, con riesgo de agotamiento.","dilemma3a":"Viajar y entrenar duro (60% +2 OVR, 40% -1 OVR)","dilemma3b":"Descansar y recuperarse (sin cambios)","dilemma4Title":"Propuesta de Liderazgo","dilemma4Desc":"La directiva te pide orientar a los novatos, con estudio táctico adicional.","dilemma4a":"Orientar a los novatos (75% +2 OVR, 25% sin cambios)","dilemma4b":"Centrarte en ti mismo (50% +1 OVR, 50% -1 OVR)"},
+          'zh-CN':{subtitle:'创建一名18岁的球员，开启篮球生涯。',name:'球员姓名',position:'场上位置',league:'选择初始联赛（随机分配球队）',teamRandom:'球队将从所选联赛中随机分配。',start:'开始职业生涯（18岁）',next:'▶ 进行 / 模拟下一场比赛',sim:'⚡ 模拟整个赛季',stats:'赛季场均数据',history:'职业生涯记录',news:'新闻与比赛动态',retire:'🏁 退役',continue:'继续',continueCareer:'继续职业生涯',decisionResult:'抉择结果',resultPositive:'结果非常好！',resultNegative:'遭遇挫折',resultNeutral:'抉择已完成',resultDescription:'你的选择使总评变化 {delta} 点，后续生涯将受到影响。',renew:'续约',years:'年',stayChina:'继续在中国打球。',goChina:'前往中国',goBrazil:'前往巴西',goEurope:'前往欧洲',chinaOffer:'在中国篮球联赛迎接新挑战。',brazilOffer:'参加巴西篮球联赛。',europeOffer:'征战欧洲篮球联赛。',training:'季前训练营',market:'自由球员市场与合同',summary:'个人奖项',welcome:'欢迎来到 HOOP LEGEND！',season:'赛季',age:'年龄',game:'比赛',role:'状态',contract:'合同',score:'得分',assists:'助攻',rebounds:'篮板',record:'战绩',"marketExpired":"你的合同已到期！请选择下一站：","marketTransfer":"转学至 {team}（NCAA）","marketCollegeDesc":"再征战一个大学赛季。","marketNBA":"NBA：{team}（{role}）","marketNbaOffer":"NBA报价：{team}（{role} · 3年）","marketNbaSign":"签约 {team}（{role} · 3年）","marketRenew":"续约 {team}（{years}年）","marketSign":"签约 {team}（{years}年）","marketMove":"转会至 {team}（{years}年）","marketEuro":"欧洲联赛：{team}","marketNBB":"巴西NBB：{team}","marketEuroOffer":"签约 {team}（欧洲联赛 · {years}年）","marketBrazilOffer":"前往巴西：{team}（NBB · 2年）","marketChinaOffer":"前往中国：{team}（CBA · 2年）","marketEuropeOffer":"前往欧洲：{team}","marketRenewDesc":"留在当前球队。","marketSwitchDesc":"在另一支球队重新开始。","marketEuroDesc":"在欧洲开启新挑战。","marketNbbDesc":"在巴西开始职业生涯。","marketProEuropeDesc":"在欧洲开始职业生涯。","marketStayBrazilDesc":"继续成为巴西球迷的宠儿。","marketChangeBrazilDesc":"转投另一支巴西球队。","marketStayEuropeDesc":"留在欧洲俱乐部。","marketReturnBrazilDesc":"回到巴西篮球联赛。","marketLastBrazilDesc":"在巴西结束职业生涯。","marketNBAStayDesc":"留在当前NBA球队。","marketNbaDecline":"以目前年龄和总评，NBA球队不再提供合同。","roleContender":"争冠球队","roleMedian":"竞争型球队","roleRebuild":"重建球队","roleContenderDesc":"冲击冠军，但上场时间竞争激烈。","roleMedianDesc":"阵容均衡，有成长和冲击季后赛的机会。","roleRebuildDesc":"重建计划，上场机会更多。","seasonSummary":"第{season}赛季总结（{age}岁）","noAwards":"本赛季没有个人奖项。","noAwardsCareer":"职业生涯没有个人奖项。","roleStarter":"首发","roleBench":"替补","roleStar":"球星","roleSuperstar":"超级巨星","roleAbsolute":"绝对首发","roleLabel":"身份：{role}","contractLabel":"合同剩余：{years}年","noHistory":"尚无已完成赛季。","newSeason":"新赛季","seasonStarted":"第{season}赛季开始！","gameWon":"胜利","gameLost":"失利","ageYears":"{age}岁","careerLegend":"联盟传奇 ⭐","careerStarter":"稳定首发 🏀","careerRetired":"职业生涯结束","careerTeams":"效力球队","careerTitles":"联赛冠军","careerAverages":"生涯场均数据","careerAwards":"个人奖项","careerYearly":"逐赛季表现","playoffResult":"季后赛结果：","clubRecord":"球队战绩：","playerAverages":"球员场均数据：","shooting":"投篮命中率：","earnedAwards":"获得的个人奖项：","newCareer":"再玩一次 🏀","nextMatch":"下一场比赛","regularSeason":"常规赛","home":"主场","away":"客场","preseasonInfo":"第{season}赛季（{age}岁）· 训练周期","startFresh":"开始新生涯？已保存的进度将被删除。","simError":"模拟出错。进度已保存，请重试。","dilemma1Title":"签名球鞋合同","dilemma1Desc":"知名品牌提供巨额合同，但要求深夜加练。","dilemma1a":"接受额外训练（70% +2总评，30% -1总评）","dilemma1b":"拒绝并保持轻松训练（总评不变）","dilemma2Title":"与教练发生冲突","dilemma2Desc":"教练希望你承担更多防守职责。你会反对还是配合？","dilemma2a":"要求更多进攻自由（60% +3总评，40% -2总评）","dilemma2b":"接受角色并帮助球队（80% +1总评，20%不变）","dilemma3Title":"欧洲夏训邀请","dilemma3Desc":"休赛期与欧洲传奇球员训练，但可能导致疲劳。","dilemma3a":"前往并刻苦训练（60% +2总评，40% -1总评）","dilemma3b":"休息恢复（总评不变）","dilemma4Title":"幕后领袖职责","dilemma4Desc":"管理层希望你指导新秀，需要额外研究战术。","dilemma4a":"指导新秀（75% +2总评，25%不变）","dilemma4b":"专注自身表现（50% +1总评，50% -1总评）"}
+        };
+        // Textos dos contratos de veteranos, para todos os idiomas.
+        const VETERAN_LABELS = {
+            en: 'NBA: {team} ({role} · 1-year contract)',
+            'pt-BR': 'NBA: {team} ({role} · contrato de 1 ano)',
+            es: 'NBA: {team} ({role} · contrato de 1 año)',
+            zh: 'NBA：{team}（{role} · 1年合同）',
+            'zh-CN': 'NBA：{team}（{role} · 1年合同）'
+        };
+        for (const [language, label] of Object.entries(VETERAN_LABELS)) {
+            if (LANGUAGES[language]) LANGUAGES[language].marketVeteranOffer = label;
+        }
+        let currentLanguage='en';
+        const t = key => (LANGUAGES[currentLanguage] || LANGUAGES.en)[key] || LANGUAGES.en[key] || key;
+
+        const EXTRA_I18N = {"en": {"dilemmaHeading": "⚖️ CAREER DILEMMA", "trainingScore": "🔥 Shooting & Scoring Focus", "trainingScoreDesc": "More shots, better three-point shooting and higher scoring potential.", "trainingPass": "🎯 Passing & Court Vision Focus", "trainingPassDesc": "Improve assists and playmaking, within your position and OVR limits.", "trainingReb": "🛡️ Rebounding & Inside Play Focus", "trainingRebDesc": "Improve rebounding based on your position and OVR.", "trainingDef": "🔒 Defense & Steals Focus", "trainingDefDesc": "Improve steals and blocks, respecting realistic positional limits.", "trainChoose": "Choose your training focus for this cycle:", "ovrBefore": "OVR BEFORE", "ovrAfter": "OVR AFTER", "overall": "Overall", "matchLabel": "Game #{number}", "seasonLabel": "Season {season}", "yearsOld": "{age} years old", "titlesCount": "{count} title(s)", "noTeams": "No teams recorded.", "noTitles": "No league titles won.", "welcomeBody": "Your basketball career begins at age 18 with {team} in {league}. Show your potential on the court!", "newSeasonBody": "A new basketball season begins. Age: {age} · OVR: {ovr} · Team: {team} ({league}).", "trainedBody": "Preseason training is complete! Age: {age} · OVR: {ovr} · Team: {team} ({league}).", "seasonNews": "Season {season} begins at age {age}! OVR: {ovr}.", "simTradeMoment": "midseason", "startTradeMoment": "start of the season", "tradeTwoTitle": "🚨 NBA TRADE ({count}/5)!", "tradeThreeTitle": "🚨 THREE-TEAM NBA TRADE ({count}/5)!", "tradeTwoBody": "{name} has been traded from {old} to {team} during {moment}. Your new team is {team}. Career trades: {count}/5.", "tradeThreeBody": "Three-team trade involving {old}, {team}, and {third}. {name} joins {team} during {moment}. Career trades: {count}/5.", "tradeTwoLog": "🚨 NBA TRADE: {name} moves from {old} to {team}.", "tradeThreeLog": "🚨 THREE-TEAM TRADE: {name} moves to {team}, in a deal involving {old} and {third}.", "tradeBadge": "NBA TRADE", "playoffOut": "Missed the Playoffs", "playoffFirst": "Eliminated in Round 1", "playoffSemi": "Eliminated in the Conference Semifinals", "playoffChampion": "League Champions! 🏆", "playoffRunner": "Finals Runner-up", "playoffConference": "Eliminated in the Conference Finals", "awardScorer": "League Scoring Leader", "awardFinals": "Finals MVP", "awardLeagueTitle": "{league} Champion", "awardNoCareer": "No individual career awards.", "seasonHistory": "Season {season} ({age} years)", "careerYear": "Season {season}", "newsStart": "SEASON 1 STARTED", "awardMvp": "Most Valuable Player (MVP)", "awardMip": "Most Improved Player (MIP)"}, "pt-BR": {"dilemmaHeading": "⚖️ DILEMA DE CARREIRA", "trainingScore": "🔥 Foco em Arremesso & Pontuação", "trainingScoreDesc": "Melhora volume de chutes, bolas de três e potencial de pontuação.", "trainingPass": "🎯 Foco em Passe & Visão de Jogo", "trainingPassDesc": "Melhora assistências e criação de jogadas, respeitando posição e OVR.", "trainingReb": "🛡️ Foco em Rebotes & Garrafão", "trainingRebDesc": "Melhora os rebotes conforme posição e OVR.", "trainingDef": "🔒 Foco em Defesa & Roubos", "trainingDefDesc": "Melhora roubos e tocos dentro dos limites realistas da posição.", "trainChoose": "Escolha seu foco de treinamento para este ciclo:", "ovrBefore": "OVR ANTES", "ovrAfter": "OVR DEPOIS", "overall": "Overall", "matchLabel": "Jogo #{number}", "seasonLabel": "Temporada {season}", "yearsOld": "{age} anos", "titlesCount": "{count} título(s)", "noTeams": "Nenhum time registrado.", "noTitles": "Nenhum título de liga conquistado.", "welcomeBody": "Sua carreira começa aos 18 anos no {team}, na {league}. Mostre seu potencial em quadra!", "newSeasonBody": "Uma nova temporada começa. Idade: {age} · OVR: {ovr} · Time: {team} ({league}).", "trainedBody": "Treinamento de pré-temporada concluído! Idade: {age} · OVR: {ovr} · Time: {team} ({league}).", "seasonNews": "Temporada {season} começa aos {age} anos! OVR: {ovr}.", "simTradeMoment": "meio da temporada", "startTradeMoment": t('startTradeMoment'), "tradeTwoTitle": "🚨 TROCA NA NBA ({count}/5)!", "tradeThreeTitle": "🚨 TROCA TRIPLA NA NBA ({count}/5)!", "tradeTwoBody": "{name} foi trocado do {old} para o {team} no {moment}. Novo time: {team}. Trocas na carreira: {count}/5.", "tradeThreeBody": "Troca entre {old}, {team} e {third}. {name} vai para o {team} no {moment}. Trocas na carreira: {count}/5.", "tradeTwoLog": "🚨 TROCA NA NBA: {name} sai do {old} e vai para {team}.", "tradeThreeLog": "🚨 TROCA TRIPLA: {name} vai para {team} em negociação com {old} e {third}.", "tradeBadge": "TROCA NBA", "playoffOut": "Fora dos Playoffs", "playoffFirst": "Eliminado na 1ª Rodada", "playoffSemi": "Eliminado nas Semifinais de Conferência", "playoffChampion": "Campeão da Liga! 🏆", "playoffRunner": "Vice-campeão das Finais", "playoffConference": "Eliminado nas Finais de Conferência", "awardScorer": "Cestinha da Liga", "awardFinals": "MVP das Finais", "awardLeagueTitle": "Título da {league}", "awardNoCareer": "Nenhum prêmio individual na carreira.", "seasonHistory": "Temporada {season} ({age} anos)", "careerYear": "Temp {season}", "newsStart": "TEMPORADA 1 INICIADA", "awardMvp": "Most Valuable Player (MVP)", "awardMip": "Most Improved Player (MIP)"}, "es": {"dilemmaHeading": "⚖️ DILEMA DE CARRERA", "trainingScore": "🔥 Enfoque en tiro y anotación", "trainingScoreDesc": "Mejora los tiros, los triples y el potencial anotador.", "trainingPass": "🎯 Enfoque en pases y visión de juego", "trainingPassDesc": "Mejora asistencias y creación de juego según posición y OVR.", "trainingReb": "🛡️ Enfoque en rebotes y juego interior", "trainingRebDesc": "Mejora los rebotes según posición y OVR.", "trainingDef": "🔒 Enfoque en defensa y robos", "trainingDefDesc": "Mejora robos y tapones con límites realistas por posición.", "trainChoose": "Elige tu entrenamiento para esta temporada:", "ovrBefore": "OVR ANTES", "ovrAfter": "OVR DESPUÉS", "overall": "Valoración", "matchLabel": "Partido #{number}", "seasonLabel": "Temporada {season}", "yearsOld": "{age} años", "titlesCount": "{count} título(s)", "noTeams": "Ningún equipo registrado.", "noTitles": "Ningún título de liga.", "welcomeBody": "Tu carrera comienza a los 18 años en {team}, en {league}. ¡Demuestra tu talento!", "newSeasonBody": "Comienza una nueva temporada. Edad: {age} · OVR: {ovr} · Equipo: {team} ({league}).", "trainedBody": "¡Entrenamiento de pretemporada terminado! Edad: {age} · OVR: {ovr} · Equipo: {team} ({league}).", "seasonNews": "¡Temporada {season} a los {age} años! OVR: {ovr}.", "simTradeMoment": "mitad de temporada", "startTradeMoment": "inicio de temporada", "tradeTwoTitle": "🚨 TRASPASO NBA ({count}/5)!", "tradeThreeTitle": "🚨 TRASPASO DE TRES EQUIPOS ({count}/5)!", "tradeTwoBody": "{name} pasa de {old} a {team} durante {moment}. Nuevo equipo: {team}. Traspasos: {count}/5.", "tradeThreeBody": "Traspaso entre {old}, {team} y {third}. {name} llega a {team} durante {moment}. Traspasos: {count}/5.", "tradeTwoLog": "🚨 TRASPASO NBA: {name} deja {old} por {team}.", "tradeThreeLog": "🚨 TRASPASO TRIPLE: {name} llega a {team} en un acuerdo con {old} y {third}.", "tradeBadge": "TRASPASO NBA", "playoffOut": "Fuera de los Playoffs", "playoffFirst": "Eliminado en primera ronda", "playoffSemi": "Eliminado en semifinales de conferencia", "playoffChampion": "¡Campeones de liga! 🏆", "playoffRunner": "Subcampeón de las Finales", "playoffConference": "Eliminado en finales de conferencia", "awardScorer": "Máximo anotador de la liga", "awardFinals": "MVP de las Finales", "awardLeagueTitle": "Campeón de {league}", "awardNoCareer": "Sin premios individuales en la carrera.", "seasonHistory": "Temporada {season} ({age} años)", "careerYear": "Temp. {season}", "newsStart": "TEMPORADA 1 INICIADA", "awardMvp": "Jugador Más Valioso (MVP)", "awardMip": "Jugador Más Mejorado (MIP)"}, "zh-CN": {"dilemmaHeading": "⚖️ 职业生涯抉择", "trainingScore": "🔥 投篮与得分训练", "trainingScoreDesc": "提高出手次数、三分效率与得分潜力。", "trainingPass": "🎯 传球与球场视野训练", "trainingPassDesc": "根据位置与总评提高助攻和组织能力。", "trainingReb": "🛡️ 篮板与内线训练", "trainingRebDesc": "根据位置与总评提高篮板能力。", "trainingDef": "🔒 防守与抢断训练", "trainingDefDesc": "提高抢断和盖帽，并遵守各位置的合理上限。", "trainChoose": "选择本赛季的训练重点：", "ovrBefore": "此前总评", "ovrAfter": "当前总评", "overall": "总评", "matchLabel": "第 {number} 场", "seasonLabel": "第 {season} 赛季", "yearsOld": "{age} 岁", "titlesCount": "{count} 个冠军", "noTeams": "暂无球队记录。", "noTitles": "尚未获得联赛冠军。", "welcomeBody": "你在18岁时加入{league}的{team}，开启篮球生涯。展现你的潜力吧！", "newSeasonBody": "新赛季开始。年龄：{age} · 总评：{ovr} · 球队：{team}（{league}）。", "trainedBody": "季前训练结束！年龄：{age} · 总评：{ovr} · 球队：{team}（{league}）。", "seasonNews": "第{season}赛季开始，{age}岁，总评{ovr}。", "simTradeMoment": "赛季中期", "startTradeMoment": "赛季初", "tradeTwoTitle": "🚨 NBA交易（{count}/5）！", "tradeThreeTitle": "🚨 NBA三方交易（{count}/5）！", "tradeTwoBody": "{name}在{moment}从{old}交易至{team}。新球队：{team}。生涯交易次数：{count}/5。", "tradeThreeBody": "{old}、{team}与{third}达成三方交易。{name}在{moment}加盟{team}。生涯交易次数：{count}/5。", "tradeTwoLog": "🚨 NBA交易：{name}从{old}加盟{team}。", "tradeThreeLog": "🚨 三方交易：{name}加盟{team}，涉及{old}和{third}。", "tradeBadge": "NBA交易", "playoffOut": "无缘季后赛", "playoffFirst": "首轮出局", "playoffSemi": "分区半决赛出局", "playoffChampion": "联赛冠军！🏆", "playoffRunner": "总决赛亚军", "playoffConference": "分区决赛出局", "awardScorer": "联赛得分王", "awardFinals": "总决赛MVP", "awardLeagueTitle": "{league}冠军", "awardNoCareer": "生涯暂无个人奖项。", "seasonHistory": "第{season}赛季（{age}岁）", "careerYear": "第{season}赛季", "newsStart": "第一赛季开始", "awardMvp": "最有价值球员（MVP）", "awardMip": "进步最快球员（MIP）"}};
+        for (const lang of Object.keys(EXTRA_I18N)) Object.assign(LANGUAGES[lang], EXTRA_I18N[lang]);
+
+        const CLUTCH_I18N = {"en": {"clutch1Title": "Buzzer-Beater Shot", "clutch1Desc": "3 seconds remain and the score is tied. What will you do?", "clutch1a": "🎯 Take a contested long-range shot", "clutch1b": "⚡ Drive aggressively to the basket", "clutch1c": "🤝 Pass to the open center", "clutch2Title": "Game-Winning Free Throws", "clutch2Desc": "You are fouled at the buzzer and have two free throws to win.", "clutch2a": "🎯 Take your time and shoot with precision", "clutch2b": "⚡ Attack quickly and draw another foul", "clutch2c": "🤝 Trust the team captain", "clutch3Title": "Final Defensive Stop", "clutch3Desc": "Your opponent misses. Six seconds remain for one last possession.", "clutch3a": "🎯 Sprint forward and shoot a three", "clutch3b": "⚡ Fast break for a dunk", "clutch3c": "🤝 Set up a play with a perfect pass"}, "pt-BR": {"clutch1Title": "Arremesso no Estouro do Cronômetro", "clutch1Desc": "Faltam 3 segundos e o jogo está empatado. O que fazer?", "clutch1a": "🎯 Arremessar de longe sob marcação", "clutch1b": "⚡ Infiltrar com força até a cesta", "clutch1c": "🤝 Passar para o pivô livre", "clutch2Title": "Lances Livres da Vitória", "clutch2Desc": "Você sofreu falta no último segundo e tem dois lances livres para vencer.", "clutch2a": "🎯 Cobrar com calma e precisão", "clutch2b": "⚡ Atacar rapidamente e buscar outra falta", "clutch2c": "🤝 Confiar no capitão do time", "clutch3Title": "Última Posse Defensiva", "clutch3Desc": "O adversário errou. Restam seis segundos para o último ataque.", "clutch3a": "🎯 Correr e arremessar de três", "clutch3b": "⚡ Contra-ataque para uma enterrada", "clutch3c": "🤝 Preparar jogada com passe preciso"}, "es": {"clutch1Title": "Tiro sobre la bocina", "clutch1Desc": "Quedan 3 segundos y el partido está empatado. ¿Qué harás?", "clutch1a": "🎯 Lanzar de lejos con oposición", "clutch1b": "⚡ Penetrar con fuerza a canasta", "clutch1c": "🤝 Pasar al pívot desmarcado", "clutch2Title": "Tiros Libres de la Victoria", "clutch2Desc": "Recibes una falta al final y tienes dos tiros libres para ganar.", "clutch2a": "🎯 Lanzar con calma y precisión", "clutch2b": "⚡ Atacar rápido y provocar otra falta", "clutch2c": "🤝 Confiar en el capitán", "clutch3Title": "Última Posesión Defensiva", "clutch3Desc": "El rival falla. Quedan seis segundos para el último ataque.", "clutch3a": "🎯 Correr y lanzar un triple", "clutch3b": "⚡ Contraataque para un mate", "clutch3c": "🤝 Preparar una jugada con un gran pase"}, "zh-CN": {"clutch1Title": "压哨绝杀", "clutch1Desc": "还剩3秒，比分持平。你会怎么做？", "clutch1a": "🎯 强投远距离投篮", "clutch1b": "⚡ 强势突破上篮", "clutch1c": "🤝 传给空位中锋", "clutch2Title": "制胜罚球", "clutch2Desc": "终场前你获得两次罚球机会，有望赢下比赛。", "clutch2a": "🎯 冷静精准地罚球", "clutch2b": "⚡ 快速进攻争取再次造犯规", "clutch2c": "🤝 信任球队队长", "clutch3Title": "最后一次防守与进攻", "clutch3Desc": "对手投篮不中，最后一次进攻还剩6秒。", "clutch3a": "🎯 快速推进投三分", "clutch3b": "⚡ 快攻扣篮", "clutch3c": "🤝 组织战术并送出精准传球"}};
+        for (const lang of Object.keys(CLUTCH_I18N)) Object.assign(LANGUAGES[lang],CLUTCH_I18N[lang]);
+        const TABLE_I18N = {"en": {"tableTemp": "Season", "tableIdade": "Age", "tableLigaTime": "League / Team", "tableCampanha": "Record", "tableMédias": "Averages", "tablePrêmios": "Awards"}, "pt-BR": {"tableTemp": "Temp", "tableIdade": "Idade", "tableLigaTime": "Liga / Time", "tableCampanha": "Campanha", "tableMédias": "Médias", "tablePrêmios": "Prêmios"}, "es": {"tableTemp": "Temp.", "tableIdade": "Edad", "tableLigaTime": "Liga / Equipo", "tableCampanha": "Récord", "tableMédias": "Promedios", "tablePrêmios": "Premios"}, "zh-CN": {"tableTemp": "赛季", "tableIdade": "年龄", "tableLigaTime": "联赛 / 球队", "tableCampanha": "战绩", "tableMédias": "场均数据", "tablePrêmios": "奖项"}};
+        for (const lang of Object.keys(TABLE_I18N)) Object.assign(LANGUAGES[lang],TABLE_I18N[lang]);
+        const tf = (key, values={}) => t(key).replace(/\{(\w+)\}/g, (_,k)=>String(values[k] ?? ''));
+        const localRole = role => ({'Titular Absoluto':'roleAbsolute','Titular':'roleStarter','Reserva':'roleBench','Estrela':'roleStar','Superestrela':'roleSuperstar'}[role] ? t({'Titular Absoluto':'roleAbsolute','Titular':'roleStarter','Reserva':'roleBench','Estrela':'roleStar','Superestrela':'roleSuperstar'}[role]) : role);
+        function localAward(a) {
+            if (a.startsWith('champ:')) return tf('awardLeagueTitle',{league:a.slice(6)});
+            const legacy={'Cestinha da Liga':'awardScorer','MVP das Finais':'awardFinals','Most Valuable Player (MVP)':'awardMvp','Most Improved Player (MIP)':'awardMip'};
+            if (a.startsWith('Título da ')) return tf('awardLeagueTitle',{league:a.slice(10)});
+            return t(legacy[a] || a);
+        }
+        function localResult(result,record='') {
+            const legacy={'Fora dos Playoffs':'playoffOut','Eliminado na 1ª Rodada':'playoffFirst','Eliminado nas Semis de Conferência':'playoffSemi','Eliminado nas Finais de Conferência':'playoffConference','Campeão da Liga! 🏆':'playoffChampion','Vice-Campeão das Finais':'playoffRunner'};
+            const key=legacy[result]||result;
+            if (LANGUAGES.en[key]) return t(key)+(record?' ('+record+')':'');
+            for(const [prefix,k] of Object.entries(legacy)) if(String(result).startsWith(prefix)) return t(k)+(record?' ('+record+')':'');
+            return result;
+        }
+        function setLanguage(lang) {
+            currentLanguage=LANGUAGES[lang]?lang:'en';
+            document.documentElement.lang=currentLanguage;
+            try {localStorage.setItem('hoop-legend-language',currentLanguage);}catch(e){}
+            const el=document.getElementById('language-select');if(el)el.value=currentLanguage;
+            const dash=document.getElementById('dashboard-language');if(dash)dash.value=currentLanguage;
+            document.querySelectorAll('[data-i18n]').forEach(node=>{node.textContent=t(node.dataset.i18n)});
+            const p=gameState.player;
+            if(document.getElementById('app-shell') && !document.getElementById('app-shell').classList.contains('hidden')) updateDashboardUI();
+            if(p.pendingPhase==='dilemmaResult')showDilemmaResult();
+            if(p.history?.length) renderHistoryList();
+            if(p.pendingPhase==='summary') showSeasonSummaryFromHistory();
+            if(p.pendingPhase==='retired') retireCareer();
+        }
+
+        // Alvos de eficiência sorteados UMA VEZ por temporada, não por partida.
+        // O treino ofensivo desloca as probabilidades para a faixa superior.
+        function ensureSeasonShootingTargets(p) {
+            if (p.shootingTargets && p.shootingTargets.season === p.season) return p.shootingTargets;
+            const scoring = p.trainingFocus === 'scoring';
+            const sample = (low, high) => {
+                const u = Math.random();
+                return low + (high - low) * (scoring ? Math.sqrt(u) : u);
+            };
+            const guard = p.position === 'PG' || p.position === 'SG';
+            p.shootingTargets = {
+                season: p.season,
+                fg: sample(.43, .52),
+                three: sample(guard ? .35 : .32, guard ? .45 : .43)
+            };
+            return p.shootingTargets;
+        }
+        // Distribui acertos ao longo dos jogos e aproxima o alvo sazonal.
+        // Uma pequena variação de jogo a jogo evita resultados artificiais.
+        function shootingMakes(attempts, priorAttempts, priorMakes, target, remainingGames) {
+            if (!attempts) return 0;
+            const estimatedFinalAttempts = priorAttempts + attempts * Math.max(1, remainingGames);
+            const expectedTotalMakes = target * estimatedFinalAttempts;
+            const remainingTarget = expectedTotalMakes - priorMakes;
+            const expectedRemainingAttempts = Math.max(attempts, estimatedFinalAttempts - priorAttempts);
+            const adjusted = Math.max(.08, Math.min(.85, remainingTarget / expectedRemainingAttempts));
+            const chance = Math.max(.04, Math.min(.9, adjusted + (Math.random() - .5) * .07));
+            let made = 0;
+            for (let i = 0; i < attempts; i++) if (Math.random() < chance) made++;
+            return made;
+        }
 
         const SAVE_KEY = 'hoop-legend-career-v2';
         let seasonFinalized = false;
@@ -511,12 +639,20 @@
                 const saved = JSON.parse(raw);
                 if (!saved?.player?.name || !Array.isArray(saved.player.history)) return false;
                 Object.assign(gameState.player, saved.player);
-                gameState.player.totalMatchesInLeague = gameState.player.league === 'NBA' ? 82 : (gameState.player.league === 'EuroLiga' ? 34 : (gameState.player.league === 'NCAA' ? 32 : 36));
+                gameState.player.totalMatchesInLeague = gamesForLeague(gameState.player.league);
                 gameState.player.seasonStats = Object.assign({pts:0,ast:0,reb:0,stl:0,blk:0,fgm:0,fga:0,fg3m:0,fg3a:0,games:0,wins:0}, gameState.player.seasonStats || {});
                 gameState.player.dilemmaSeasonsTriggered ||= [];
                 gameState.player.clutchMatchesThisSeason ||= [];
                 gameState.player.clubStats ||= {};
                 gameState.player.trophies ||= [];
+                // Compatibilidade com carreiras salvas antes desta atualização.
+                // Conquistas antigas contam como bônus já utilizados.
+                if (typeof gameState.player.sixthManOvrBonusUsed !== 'boolean')
+                    gameState.player.sixthManOvrBonusUsed = gameState.player.trophies.includes('Sixth Man of the Year (6MOY)');
+                if (typeof gameState.player.mipOvrBonusUsed !== 'boolean')
+                    gameState.player.mipOvrBonusUsed = gameState.player.hasWonMIP || gameState.player.trophies.includes('awardMip');
+                if (typeof gameState.player.mvpOvrBonusUsed !== 'boolean')
+                    gameState.player.mvpOvrBonusUsed = gameState.player.trophies.some(a => a === 'awardMvp' || a === 'Most Valuable Player (MVP)');
                 gameState.player.pendingPhase ||= null;
                 seasonFinalized = !!saved.finalized;
                 document.getElementById('creation-screen').classList.add('hidden');
@@ -526,6 +662,7 @@
                 if (phase === 'summary') showSeasonSummaryFromHistory();
                 else if (phase === 'market') openMarketModal();
                 else if (phase === 'training') openPreSeason();
+                else if (phase === 'dilemmaResult') showDilemmaResult();
                 else if (phase === 'dilemma') {
                     const d = CAREER_DILEMMAS.find(x => x.seasonTrigger === gameState.player.season);
                     if (d) openDilemmaModal(d); else resumeCareerFlow();
@@ -535,16 +672,44 @@
                 return true;
             } catch (err) { console.warn('Save inválido:', err); return false; }
         }
+        let summaryRevealTimers = [];
+        function revealSeasonSummary() {
+            summaryRevealTimers.forEach(clearTimeout);
+            summaryRevealTimers = [];
+            const modal = document.getElementById('modal-season-summary');
+            const items = [
+                ...modal.querySelectorAll('#summary-team-record, #summary-team-result, #summary-player-stats, #summary-player-fg'),
+                modal.querySelector('#summary-awards')
+            ].filter(Boolean);
+            const button = modal.querySelector('button[onclick="proceedAfterSummary()"]');
+            if (button) button.disabled = true;
+            items.forEach(el => {
+                el.classList.remove('season-stat-visible');
+                el.classList.add('season-stat-hidden');
+            });
+            // 190 ms entre informações: apresentação inteira em aproximadamente 1,2 s.
+            items.forEach((el, i) => {
+                summaryRevealTimers.push(setTimeout(() => {
+                    if (modal.classList.contains('hidden')) return;
+                    el.classList.remove('season-stat-hidden');
+                    el.classList.add('season-stat-visible');
+                }, 180 + i * 190));
+            });
+            summaryRevealTimers.push(setTimeout(() => {
+                if (button) button.disabled = false;
+            }, 180 + items.length * 190 + 100));
+        }
         function showSeasonSummaryFromHistory() {
             const p=gameState.player, h=p.history[p.history.length-1];
             if (!h) return;
-            setElemText('summary-title', `RESUMO DA TEMPORADA ${h.season} (${h.age} ANOS)`);
-            setElemText('summary-team-record', h.record.replace('-', ' V - ')+' D');
-            setElemText('summary-team-result', h.result);
+            setElemText('summary-title', tf('seasonSummary',{season:h.season,age:h.age}));
+            setElemText('summary-team-record', h.record);
+            setElemText('summary-team-result', localResult(h.result,h.record));
             setElemText('summary-player-stats', h.stats);
             setElemText('summary-player-fg', h.shooting || '');
-            document.getElementById('summary-awards').innerHTML = h.awards.length ? h.awards.map(a=>`<span class="bg-amber-950 text-amber-300 border border-amber-700 px-2.5 py-1 rounded-md text-xs font-bold">${a}</span>`).join('') : 'Nenhum prêmio individual nesta temporada.';
+            document.getElementById('summary-awards').innerHTML = h.awards.length ? h.awards.map(a=>`<span class="bg-amber-950 text-amber-300 border border-amber-700 px-2.5 py-1 rounded-md text-xs font-bold">${localAward(a)}</span>`).join('') : t('noAwards');
             document.getElementById('modal-season-summary').classList.remove('hidden');
+            revealSeasonSummary();
         }
 
         let postNewsCallback = null;
@@ -557,6 +722,7 @@
         window.onload = () => {
             setupCreationForm();
             restoreCareer();
+            setLanguage(localStorage.getItem('hoop-legend-language') || 'en');
         };
 
         function setupCreationForm() {
@@ -569,10 +735,10 @@
                 if (nameInput && nameInput.value.trim() !== '') gameState.player.name = nameInput.value.trim();
                 if (posSelect) gameState.player.position = posSelect.value;
                 const startingLeague = document.getElementById('start-league').value;
-                const startingPool = startingLeague === 'NCAA' ? NCAA_TEAMS : (startingLeague === 'EuroLiga' ? EURO_TEAMS : NBB_TEAMS);
+                const startingPool = startingLeague === 'NCAA' ? NCAA_TEAMS : (startingLeague === 'EuroLiga' ? EURO_TEAMS : (startingLeague === 'CBA' ? CBA_TEAMS : NBB_TEAMS));
                 gameState.player.league = startingLeague;
                 gameState.player.team = startingPool[Math.floor(Math.random() * startingPool.length)];
-                gameState.player.totalMatchesInLeague = startingLeague === 'NCAA' ? 32 : (startingLeague === 'EuroLiga' ? 34 : 36);
+                gameState.player.totalMatchesInLeague = gamesForLeague(startingLeague);
                 gameState.player.contractYearsLeft = startingLeague === 'NCAA' ? 1 : 2;
                 gameState.player.teamType = ['contender','median','rebuild'][Math.floor(Math.random()*3)];
 
@@ -580,15 +746,15 @@
                 // Talentos geracionais são raros, e o potencial não é garantia de alcançá-lo.
                 const potentialRoll = Math.random();
                 let potential;
-                if (potentialRoll < 0.15) potential = 76;                                  // 15%: auge mínimo 76
-                else if (potentialRoll < 0.49) potential = 77 + Math.floor(Math.random() * 5);  // 34%: 77–81
-                else if (potentialRoll < 0.79) potential = 82 + Math.floor(Math.random() * 5);  // 30%: 82–86
-                else if (potentialRoll < 0.95) potential = 87 + Math.floor(Math.random() * 4);  // 16%: 87–90
-                else potential = 91 + Math.floor(Math.random() * 4);                            // 5%: 91–94
+                if (potentialRoll < 0.10) potential = 76;                                  // 10%: auge mínimo 76
+                else if (potentialRoll < 0.35) potential = 77 + Math.floor(Math.random() * 5);  // 25%: 77–81
+                else if (potentialRoll < 0.72) potential = 82 + Math.floor(Math.random() * 5);  // 37%: 82–86
+                else if (potentialRoll < 0.94) potential = 87 + Math.floor(Math.random() * 4);  // 22%: 87–90
+                else potential = 91 + Math.floor(Math.random() * 4);                            // 6%: 91–94
                 const athlete = gameState.player;
                 athlete.maxTargetOvr = potential;
                 athlete.careerTier = potential >= 91 ? 'goat' : potential >= 87 ? 'star' : potential >= 78 ? 'starter' : 'roleplayer';
-                athlete.developmentRate = 0.65 + Math.random() * 0.7;
+                athlete.developmentRate = 0.78 + Math.random() * 0.67;
                 athlete.peakAge = 27 + Math.floor(Math.random() * 6);
                 athlete.developmentMomentum = 0;
 
@@ -600,7 +766,7 @@
                 gameState.player.seasonRole = calculateRole();
                 saveCareer();
                 updateDashboardUI();
-                showNewsCard("BEM-VINDO AO HOOP LEGEND!", `<p>Sua carreira profissional começou aos <strong>18 anos</strong> na <strong>${gameState.player.league}</strong> vestindo a camisa do <strong>${gameState.player.team}</strong>.</p><p class="text-xs text-slate-400 mt-1">Mostre seu potencial na quadra!</p>`, "TEMPORADA 1 INICIADA");
+                showNewsCard(t('welcome'), `<p>${tf('welcomeBody',{team:gameState.player.team,league:gameState.player.league})}</p>`, t('newsStart'));
             };
         }
 
@@ -627,6 +793,16 @@
             }
 
             const ovr = p.ovr;
+            // Promoção conquistada vale apenas para a mesma franquia e não supera
+            // as exigências de elenco de um novo candidato ao título.
+            if (p.promotedStarterTeam === p.team && p.promotedStarterLeague === 'NBA' && p.promotedStarterSeason === p.season) {
+                if (p.teamType === 'contender' && ovr < 79) {
+                    // Mantém a promoção apenas no clube onde ela foi conquistada.
+                    return { role: 'Titular', isBench: false, roleTier: 2 };
+                }
+                if ((p.teamType === 'rebuild' && ovr < 65) || (p.teamType === 'median' && ovr < 72))
+                    return { role: 'Titular', isBench: false, roleTier: 2 };
+            }
             if (p.teamType === 'contender') {
                 if (ovr < 79) return { role: 'Reserva', isBench: true, roleTier: 1 };
                 if (ovr <= 84) return { role: 'Titular', isBench: false, roleTier: 2 };
@@ -655,15 +831,15 @@
             setElemText('ui-player-pos', p.position);
             setElemText('ui-player-team', p.team);
             setElemText('ui-player-league', p.league);
-            setElemText('ui-player-role', `Status: ${roleInfo.role}`);
-            setElemText('ui-contract-status', `Contrato: ${p.contractYearsLeft} ano(s) rest.`);
+            setElemText('ui-player-role', tf('roleLabel',{role:localRole(roleInfo.role)}));
+            setElemText('ui-contract-status', tf('contractLabel',{years:p.contractYearsLeft}));
             setElemText('ui-player-age', p.age);
             setElemText('ui-player-ovr', p.ovr);
             setElemText('ui-player-season', `${p.season}/20`);
             setElemText('ui-player-match-num', `${p.matchNum}/${p.totalMatchesInLeague}`);
 
             setElemText('card-team-home', p.team);
-            let pool = p.league === 'NBA' ? NBA_TEAMS : (p.league === 'EuroLiga' ? EURO_TEAMS : (p.league === 'NCAA' ? NCAA_TEAMS : NBB_TEAMS));
+            let pool = p.league === 'NBA' ? NBA_TEAMS : (p.league === 'EuroLiga' ? EURO_TEAMS : (p.league === 'NCAA' ? NCAA_TEAMS : (p.league === 'CBA' ? CBA_TEAMS : NBB_TEAMS)));
             let opps = pool.filter(t => t !== p.team);
             let opp = opps[Math.floor(Math.random() * opps.length)] || opps[0];
             setElemText('card-team-away', opp);
@@ -706,13 +882,13 @@
 
             const fgPct = matchStats.fga > 0 ? ((matchStats.fgm / matchStats.fga) * 100).toFixed(0) : 0;
             const resultColor = isWin ? 'text-emerald-400 font-bold' : 'text-red-400 font-bold';
-            const resultText = isWin ? 'VITÓRIA' : 'DERROTA';
+            const resultText = isWin ? t('gameWon') : t('gameLost');
 
             container.innerHTML = `
                 <div class="bg-slate-900/95 border border-slate-700/80 p-3.5 rounded-2xl shadow-2xl backdrop-blur-md animate-slide-up space-y-2 pointer-events-auto">
                     <div class="flex justify-between items-center border-b border-slate-800 pb-1.5 text-xs">
                         <div class="flex items-center space-x-2">
-                            <span class="bg-slate-800 px-2 py-0.5 rounded text-amber-400 font-bold">Jogo #${matchNum}</span>
+                            <span class="bg-slate-800 px-2 py-0.5 rounded text-amber-400 font-bold">${tf('matchLabel',{number:matchNum})}</span>
                             <span class="text-slate-300 font-semibold">vs ${opponent}</span>
                         </div>
                         <span class="${resultColor} text-[11px] font-black">${resultText}</span>
@@ -788,7 +964,7 @@
 
             // 4% de chance de ocorrer no meio da temporada
             if (Math.random() < 0.04) {
-                return executeSurpriseTrade("meio de temporada");
+                return executeSurpriseTrade(t('simTradeMoment'));
             }
             return false;
         }
@@ -802,7 +978,7 @@
 
             // 8% de chance de ocorrer no início de uma temporada
             if (Math.random() < 0.08) {
-                return executeSurpriseTrade("início da temporada");
+                return executeSurpriseTrade(t('startTradeMoment'));
             }
             return false;
         }
@@ -820,42 +996,16 @@
             let isDoubleTrade = Math.random() < 0.75;
             let newTeam = shuffled[0];
 
+            p.promotedStarterTeam = null; p.promotedStarterLeague = null;
             p.team = newTeam;
             let teamTypes = ['contender', 'median', 'rebuild'];
             p.teamType = teamTypes[Math.floor(Math.random() * teamTypes.length)];
 
-            if (isDoubleTrade) {
-                logNews(`🚨 TROCA DUPLA NA NBA (${p.tradesCount}/5): Negociação direta entre ${oldTeam} e ${newTeam} envia ${p.name} para o novo time!`);
-                updateDashboardUI();
-
-                showNewsCard(
-                    `🚨 TROCA NA NBA (${p.tradesCount}/5)!`,
-                    `<p>NEGOCIAÇÃO DIRETA! A diretoria do <strong>${oldTeam}</strong> fechou um acordo direto (troca entre 2 times) no ${momentText} e trocou <strong>${p.name}</strong>!</p>
-                     <div class="text-xs text-left bg-slate-900 p-2.5 rounded-lg border border-slate-800 space-y-1 my-2">
-                        <p>🏀 <strong>${oldTeam}</strong> ↔️ <strong>${newTeam}</strong></p>
-                     </div>
-                     <p class="mt-2 text-amber-300 font-bold">Seu novo destino: ${newTeam}</p>
-                     <p class="text-xs text-slate-400 mt-1">Como seu OVR (${p.ovr}) está abaixo de 84 (limite de jogador intocável), a franquia realizou a troca. Trocas na carreira: ${p.tradesCount}/5.</p>`,
-                    "BOMBA DA LIGA (2 TEAMS)"
-                );
-            } else {
-                let thirdTeam = shuffled[1];
-                logNews(`🚨 TROCA TRIPLA NA NBA (${p.tradesCount}/5): Acordo entre 3 times (${oldTeam}, ${newTeam} e ${thirdTeam}) envia ${p.name} para o ${newTeam}!`);
-                updateDashboardUI();
-
-                showNewsCard(
-                    `🚨 TROCA TRIPLA NA NBA (${p.tradesCount}/5)!`,
-                    `<p>BOMBA ENVOLVENDO 3 EQUIPES! Uma negociação complexa de 3 times foi concluída no ${momentText}:</p>
-                     <ul class="text-xs text-left bg-slate-900 p-2.5 rounded-lg border border-slate-800 space-y-1 my-2">
-                        <li>🏀 <strong>${oldTeam}</strong>: Envia ${p.name} ao ${newTeam}.</li>
-                        <li>🏀 <strong>${newTeam}</strong>: Recebe ${p.name} e envia escolhas de Draft para o ${thirdTeam}.</li>
-                        <li>🏀 <strong>${thirdTeam}</strong>: Envia veteranos para o ${oldTeam}.</li>
-                     </ul>
-                     <p class="mt-2 text-amber-300 font-bold">Seu novo destino: ${newTeam}</p>
-                     <p class="text-xs text-slate-400 mt-1">Trocas na carreira: ${p.tradesCount}/5.</p>`,
-                    "BOMBA DA LIGA (3 TEAMS)"
-                );
-            }
+            const vars={name:p.name,old:oldTeam,team:newTeam,third:shuffled[1],moment:momentText,count:p.tradesCount};
+            logNews(tf(isDoubleTrade?'tradeTwoLog':'tradeThreeLog',vars));
+            updateDashboardUI();
+            showNewsCard(tf(isDoubleTrade?'tradeTwoTitle':'tradeThreeTitle',vars),
+                `<p>${tf(isDoubleTrade?'tradeTwoBody':'tradeThreeBody',vars)}</p>`,t('tradeBadge'));
             saveCareer();
             return true;
         }
@@ -872,43 +1022,57 @@
 
         function openClutchModal() {
             const scenarios = [
-                { title: "Arremesso do Estouro do Cronômetro", desc: "Faltam 3 segundos, placar empatado. Como você define o lance?", options: [
-                    { label: "🎯 Chutar de longa distância contestado", type: "shot" },
-                    { label: "⚡ Infiltrar explosivo pelo garrafão", type: "drive" },
-                    { label: "🤝 Chamar jogada e passar para o pivô livre", type: "pass" }
-                ]},
-                { title: "Lance Livre da Vitória", desc: "Você sofreu falta no último segundo e tem 2 lances livres para vencer.", options: [
-                    { label: "🎯 Respirar fundo e cobrar com extrema técnica", type: "shot" },
-                    { label: "⚡ Arriscar arremesso rápido e sofrer falta de novo", type: "drive" },
-                    { label: "🤝 Repassar a cobrança para o capitão do time", type: "pass" }
-                ]},
-                { title: "Última Posse Defensiva e Ofensiva", desc: "O adversário errou o ataque. Sobraram 6 segundos na quadra de defesa.", options: [
-                    { label: "🎯 Correr pra quadra de ataque e puxar o jumper de 3", type: "shot" },
-                    { label: "⚡ Contra-ataque veloz rumo à enterrada", type: "drive" },
-                    { label: "🤝 Organizar jogada ensaiada com passe primoroso", type: "pass" }
-                ]}
+              {title:'clutch1Title',desc:'clutch1Desc',options:[{label:'clutch1a',type:'shot'},{label:'clutch1b',type:'drive'},{label:'clutch1c',type:'pass'}]},
+              {title:'clutch2Title',desc:'clutch2Desc',options:[{label:'clutch2a',type:'shot'},{label:'clutch2b',type:'drive'},{label:'clutch2c',type:'pass'}]},
+              {title:'clutch3Title',desc:'clutch3Desc',options:[{label:'clutch3a',type:'shot'},{label:'clutch3b',type:'drive'},{label:'clutch3c',type:'pass'}]}
             ];
-
             let sc = scenarios[Math.floor(Math.random() * scenarios.length)];
-            setElemText('clutch-title', sc.title);
-            setElemText('clutch-desc', sc.desc);
+            setElemText('clutch-title', t(sc.title));
+            setElemText('clutch-desc', t(sc.desc));
 
             const container = document.getElementById('clutch-options');
             container.innerHTML = sc.options.map(opt => `
                 <button onclick="resolveClutch('${opt.type}')" class="w-full p-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl font-bold text-xs text-white transition-all text-left">
-                    ${opt.label}
+                    ${t(opt.label)}
                 </button>
             `).join('');
 
             document.getElementById('match-screen').classList.remove('hidden');
         }
 
+        // Resultado narrativo do lance decisivo, localizado para todos os idiomas.
+        const CLUTCH_FEEDBACK = {
+            en: {shot:['Your contested shot goes in at the buzzer!','The contested shot misses. The defense holds.'],drive:['You attack the rim and finish the winning play!','The defense stops your drive at the rim.'],pass:['Your pass finds a teammate for the winning basket!','The defense reads your pass and breaks up the play.'],win:'PLAY SUCCESSFUL',loss:'PLAY FAILED',victory:'VICTORY',defeat:'DEFEAT',next:'CONTINUE',round:'Game'},
+            'pt-BR': {shot:['Seu arremesso contestado cai no estouro do cronômetro!','O arremesso contestado não cai. A defesa leva a melhor.'],drive:['Você infiltra e converte a cesta da vitória!','A defesa impede sua infiltração no garrafão.'],pass:['Seu passe encontra um companheiro para a cesta da vitória!','A defesa antecipa seu passe e interrompe a jogada.'],win:'JOGADA BEM-SUCEDIDA',loss:'JOGADA FALHOU',victory:'VITÓRIA',defeat:'DERROTA',next:'CONTINUAR',round:'Jogo'},
+            es: {shot:['¡Tu tiro defendido entra sobre la bocina!','El tiro defendido falla. La defensa resiste.'],drive:['¡Atacas el aro y anotas la canasta ganadora!','La defensa detiene tu penetración.'],pass:['¡Tu pase encuentra a un compañero para la canasta ganadora!','La defensa intercepta tu pase.'],win:'JUGADA EXITOSA',loss:'JUGADA FALLIDA',victory:'VICTORIA',defeat:'DERROTA',next:'CONTINUAR',round:'Partido'},
+            zh: {shot:['你的高难度投篮压哨命中！','高难度投篮偏出，防守成功。'],drive:['你突破上篮，打进制胜球！','对手在篮下成功阻止你的突破。'],pass:['你的传球帮助队友投进制胜球！','对手识破并破坏了你的传球。'],win:'关键球成功',loss:'关键球失败',victory:'胜利',defeat:'失利',next:'继续',round:'比赛'}
+        };
         function resolveClutch(actionType) {
-            document.getElementById('match-screen').classList.add('hidden');
-            gameState.player.pendingClutch = false;
             const p = gameState.player;
+            if (!p.pendingClutch) return;
+            document.getElementById('match-screen').classList.add('hidden');
+            p.pendingClutch = false;
             const chance = Math.min(0.90, 0.48 + p.ovr / 140 + (actionType === 'pass' ? .05 : 0));
-            simulateSingleMatch(Math.random() < chance);
+            const success = Math.random() < chance;
+            const gameNumber = p.matchNum;
+            const opponent = document.getElementById('card-team-away').innerText;
+            // A partida é contabilizada exatamente uma vez. O resumo da temporada
+            // aguarda a confirmação do card, inclusive no último jogo.
+            simulateSingleMatch(success, false, true);
+            const lang = CLUTCH_FEEDBACK[currentLanguage] || CLUTCH_FEEDBACK.en;
+            const play = lang[actionType] || lang.shot;
+            const heading = success ? lang.win : lang.loss;
+            const result = success ? lang.victory : lang.defeat;
+            showNewsCard(
+                `${success ? '🏀' : '❌'} ${heading}`,
+                `<div class="space-y-3"><p class="text-lg font-bold ${success ? 'text-emerald-400' : 'text-red-400'}">${result}</p><p>${play[success ? 0 : 1]}</p><p class="text-xs text-slate-400">${lang.round} #${gameNumber} · ${opponent}</p></div>`,
+                result,
+                () => {
+                    if (p.matchNum > p.totalMatchesInLeague) endSeason();
+                    else if (!checkSurpriseTradeMidSeason()) updateDashboardUI();
+                    saveCareer();
+                }
+            );
         }
 
         // CALCULADOR DE TETO POR OVR
@@ -922,7 +1086,7 @@
 
         // SISTEMA DE REBOTES E ASSISTÊNCIAS COM RESPEITO RIGOROSO A POSIÇÃO, OVR E FOCO DE TREINO (+1)
         // E SISTEMA REALISTA DE PONTUAÇÃO EXPLOSIVA COM BASE NO OVR (30+, 40+ E 50+ PTS)
-        function simulateSingleMatch(forcedWin = null, quiet = false) {
+        function simulateSingleMatch(forcedWin = null, quiet = false, deferEnd = false) {
             const p = gameState.player;
             const ovr = p.ovr;
             const focus = p.trainingFocus;
@@ -1075,24 +1239,17 @@
             const allowedTotal = Math.floor(blockLimits[pos] * (p.seasonStats.games + 1) + 1e-8);
             blk = Math.max(0, Math.min(blk, allowedTotal - p.seasonStats.blk));
 
-            // 4. ESTATÍSTICAS DE ARREMESSO
-            let fga = Math.max(pts, Math.round(pts * 1.2 + Math.random() * 2));
-            let fgm = 0;
-            let fg3a = 0;
-            let fg3m = 0;
-
-            if (isBigMan) {
-                let fgPctReal = 0.52 + (Math.random() * 0.08);
-                fgm = Math.min(fga, Math.round(fga * fgPctReal));
-                fg3a = Math.random() < 0.3 ? 1 : 0;
-                fg3m = fg3a > 0 && Math.random() < 0.28 ? 1 : 0;
-            } else {
-                let fgPctReal = 0.44 + (Math.random() * 0.10);
-                fgm = Math.min(fga, Math.round(fga * fgPctReal));
-                fg3a = Math.round(fga * 0.42);
-                let fg3PctReal = 0.38 + (Math.random() * 0.08);
-                fg3m = Math.min(fg3a, Math.round(fg3a * fg3PctReal));
-            }
+            // 4. EFICIÊNCIA DE ARREMESSO: VARIAÇÃO POR TEMPORADA
+            const targets = ensureSeasonShootingTargets(p);
+            const remaining = Math.max(1, p.totalMatchesInLeague - p.seasonStats.games);
+            const isGuard = pos === 'PG' || pos === 'SG';
+            const fga = Math.max(8, Math.round(pts * 0.77 + 4 + Math.random() * 3));
+            const fg3a = isBigMan ? (Math.random() < .3 ? 1 : 0) :
+                Math.max(1, Math.round(fga * (isGuard ? .42 : .32)));
+            const fg3m = shootingMakes(fg3a, p.seasonStats.fg3a, p.seasonStats.fg3m, targets.three, remaining);
+            // FG% engloba bolas de três; acertos totais nunca podem ser menores que 3PM.
+            const fgTargetMakes = shootingMakes(fga, p.seasonStats.fga, p.seasonStats.fgm, targets.fg, remaining);
+            const fgm = Math.min(fga, Math.max(fg3m, fgTargetMakes));
 
             p.seasonStats.pts += pts;
             p.seasonStats.ast += ast;
@@ -1118,7 +1275,8 @@
             p.matchNum++;
 
             if (!quiet) {
-                if (p.matchNum > p.totalMatchesInLeague) endSeason();
+                if (deferEnd) updateDashboardUI();
+                else if (p.matchNum > p.totalMatchesInLeague) endSeason();
                 else if (!checkSurpriseTradeMidSeason()) updateDashboardUI();
                 saveCareer();
             } else saveCareer();
@@ -1134,45 +1292,45 @@
                 endSeason();
             } catch (err) {
                 console.error('Erro na simulação:', err);
-                showToast('Erro ao simular. Progresso salvo; tente novamente.', 'error');
+                showToast(t('simError'), 'error');
             } finally { simulationRunning = false; saveCareer(); }
         }
 
         const CAREER_DILEMMAS = [
             {
                 seasonTrigger: 3,
-                title: "Proposta de Tênis Signature",
-                desc: "Uma grande marca oferece um contrato milionário, mas exige treinos extras exaustivos durante a madrugada.",
+                title: "dilemma1Title",
+                desc: "dilemma1Desc",
                 options: [
-                    { label: "Aceitar os treinos exaustivos (70% chance +2 OVR, 30% chance -1 OVR)", successChance: 0.7, winOvr: 2, failOvr: -1 },
-                    { label: "Recusar e manter rotina leve (100% sem alteração)", successChance: 1.0, winOvr: 0, failOvr: 0 }
+                    { label: "dilemma1a", successChance: 0.7, winOvr: 2, failOvr: -1 },
+                    { label: "dilemma1b", successChance: 1.0, winOvr: 0, failOvr: 0 }
                 ]
             },
             {
                 seasonTrigger: 7,
-                title: "Conflito com o Treinador",
-                desc: "O técnico quer mudar sua função tática para um estilo mais defensivo. Você bate de frente ou obedece?",
+                title: "dilemma2Title",
+                desc: "dilemma2Desc",
                 options: [
-                    { label: "Bater de frente e exigir mais liberdade ofensiva (55% chance +3 OVR, 45% chance -2 OVR)", successChance: 0.55, winOvr: 3, failOvr: -2 },
-                    { label: "Aceitar a função e focar no coletivo (80% chance +1 OVR, 20% chance 0 OVR)", successChance: 0.8, winOvr: 1, failOvr: 0 }
+                    { label: "dilemma2a", successChance: 0.60, winOvr: 3, failOvr: -2 },
+                    { label: "dilemma2b", successChance: 0.8, winOvr: 1, failOvr: 0 }
                 ]
             },
             {
                 seasonTrigger: 11,
-                title: "Convite para Campanha de Verão na Europa",
-                desc: "Você recebe convite para treinar com lendas europeias nas férias, mas arrisca sofrer desgaste físico.",
+                title: "dilemma3Title",
+                desc: "dilemma3Desc",
                 options: [
-                    { label: "Viajar e treinar pesado (60% chance +2 OVR, 40% chance -1 OVR)", successChance: 0.6, winOvr: 2, failOvr: -1 },
-                    { label: "Descansar e recuperar o corpo (100% sem alteração)", successChance: 1.0, winOvr: 0, failOvr: 0 }
+                    { label: "dilemma3a", successChance: 0.6, winOvr: 2, failOvr: -1 },
+                    { label: "dilemma3b", successChance: 1.0, winOvr: 0, failOvr: 0 }
                 ]
             },
             {
                 seasonTrigger: 15,
-                title: "Proposta de Liderança nos Bastidores",
-                desc: "A diretoria pede para você assumir o cargo de mentor dos novatos, exigindo tempo de estudo tático.",
+                title: "dilemma4Title",
+                desc: "dilemma4Desc",
                 options: [
-                    { label: "Assumir a mentoria com dedicação total (75% chance +2 OVR, 25% chance 0 OVR)", successChance: 0.75, winOvr: 2, failOvr: 0 },
-                    { label: "Focar apenas no próprio rendimento (50% chance +1 OVR, 50% chance -1 OVR)", successChance: 0.5, winOvr: 1, failOvr: -1 }
+                    { label: "dilemma4a", successChance: 0.75, winOvr: 2, failOvr: 0 },
+                    { label: "dilemma4b", successChance: 0.5, winOvr: 1, failOvr: -1 }
                 ]
             }
         ];
@@ -1191,13 +1349,13 @@
         }
 
         function openDilemmaModal(dilemma) {
-            setElemText('dilemma-title', dilemma.title);
-            setElemText('dilemma-desc', dilemma.desc);
+            setElemText('dilemma-title', t(dilemma.title));
+            setElemText('dilemma-desc', t(dilemma.desc));
 
             const container = document.getElementById('dilemma-buttons');
             container.innerHTML = dilemma.options.map((opt, idx) => `
                 <button onclick="resolveDilemma(${opt.successChance}, ${opt.winOvr}, ${opt.failOvr})" class="w-full p-3.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl font-bold text-xs text-white transition-all text-left">
-                    ${opt.label}
+                    ${t(opt.label)}
                 </button>
             `).join('');
 
@@ -1207,21 +1365,39 @@
         function resolveDilemma(chance, winOvr, failOvr) {
             document.getElementById('modal-dilemma').classList.add('hidden');
             const p = gameState.player;
-            let success = Math.random() < chance;
-
-            if (success && winOvr !== 0) {
-                p.ovr = Math.min(99, p.ovr + winOvr);
-                showToast(`Sucesso no dilema! OVR alterado em +${winOvr}`, 'success');
-                logNews(`Dilema resolvido com sucesso! OVR: ${p.ovr}`);
-            } else if (!success && failOvr !== 0) {
-                p.ovr = Math.max(50, p.ovr + failOvr);
-                showToast(`Resultado negativo no dilema. OVR alterado em ${failOvr}`, 'error');
-                logNews(`Dilema com desfecho adverso. OVR: ${p.ovr}`);
-            } else {
-                showToast('Dilema concluído sem alterações de OVR.', 'info');
-            }
-            p.pendingPhase = null;
+            const before = p.ovr;
+            const success = Math.random() < chance;
+            const change = success ? winOvr : failOvr;
+            // Dilemma bonuses cannot override the player's hidden career potential.
+            p.ovr = Math.max(50, Math.min(Math.max(76,p.maxTargetOvr || 80), p.ovr + change));
+            const delta = p.ovr - before;
+            p.pendingDilemmaResult = {before,after:p.ovr,delta,success,season:p.season};
+            p.pendingPhase = 'dilemmaResult';
+            saveCareer();
             updateDashboardUI();
+            showDilemmaResult();
+        }
+        function showDilemmaResult() {
+            const r = gameState.player.pendingDilemmaResult;
+            if (!r) return continueAfterDilemmaResult();
+            const lang = currentLanguage;
+            const title = r.delta > 0 ? t('resultPositive') : r.delta < 0 ? t('resultNegative') : t('resultNeutral');
+            setElemText('dilemma-result-icon',r.delta>0?'🏆':r.delta<0?'⚠️':'🤝');
+            setElemText('dilemma-result-kicker',t('decisionResult'));
+            setElemText('dilemma-result-title',title);
+            setElemText('dilemma-result-description',t('resultDescription').replace('{delta}',(r.delta>0?'+':'')+r.delta));
+            setElemText('dilemma-result-before',r.before);
+            setElemText('dilemma-result-after',r.after);
+            setElemText('dilemma-result-continue',t('continueCareer'));
+            document.getElementById('modal-dilemma-result').classList.remove('hidden');
+        }
+        function continueAfterDilemmaResult() {
+            document.getElementById('modal-dilemma-result').classList.add('hidden');
+            const p=gameState.player;
+            if(p.pendingDilemmaResult) logNews(`${t('decisionResult')}: OVR ${p.pendingDilemmaResult.before} → ${p.pendingDilemmaResult.after}`);
+            p.pendingDilemmaResult=null;
+            p.pendingPhase=null;
+            saveCareer();
             resumeCareerFlow();
         }
 
@@ -1258,35 +1434,28 @@
             cClub.fg3m += p.seasonStats.fg3m;
             cClub.fg3a += p.seasonStats.fg3a;
 
-            let playoffLine = p.totalMatchesInLeague === 82 ? 37 : (p.totalMatchesInLeague === 34 ? 16 : 17);
-            let contenderLine = p.totalMatchesInLeague === 82 ? 49 : (p.totalMatchesInLeague === 34 ? 22 : 23);
+            let playoffLine = p.totalMatchesInLeague === 82 ? 37 : (p.totalMatchesInLeague === 34 ? 16 : (p.totalMatchesInLeague === 46 ? 22 : 17));
+            let contenderLine = p.totalMatchesInLeague === 82 ? 49 : (p.totalMatchesInLeague === 34 ? 22 : (p.totalMatchesInLeague === 46 ? 29 : 23));
 
             let teamResult = "";
             let isChampion = false;
             let isContenderTeam = false;
 
-            if (wins < playoffLine) {
-                teamResult = `Fora dos Playoffs (${wins}-${losses})`;
-            } else if (wins >= playoffLine && wins < contenderLine) {
-                let exitRound = Math.random() < 0.6 ? "Eliminado na 1ª Rodada" : "Eliminado nas Semis de Conferência";
-                teamResult = `${exitRound} (${wins}-${losses})`;
-            } else {
-                isContenderTeam = true;
-                let roll = Math.random();
-                if (roll < 0.38) {
-                    teamResult = `Campeão da Liga! 🏆 (${wins}-${losses})`;
-                    isChampion = true;
-                } else if (roll < 0.72) {
-                    teamResult = `Vice-Campeão das Finais (${wins}-${losses})`;
-                } else {
-                    teamResult = `Eliminado nas Finais de Conferência (${wins}-${losses})`;
-                }
+            let resultKey;
+            if (wins < playoffLine) resultKey='playoffOut';
+            else if (wins < contenderLine) resultKey=Math.random()<.6?'playoffFirst':'playoffSemi';
+            else {
+                isContenderTeam=true;
+                const roll=Math.random();
+                resultKey=roll<.38?'playoffChampion':roll<.72?'playoffRunner':'playoffConference';
+                isChampion=resultKey==='playoffChampion';
             }
+            teamResult=`${t(resultKey)} (${wins}-${losses})`;
 
             let awards = [];
 
             if (ppg >= 25.0) {
-                awards.push("Cestinha da Liga");
+                awards.push('awardScorer');
             }
 
             if (p.league === 'NBA' && p.nbaSeasonCount === 1 && ppg >= 16 && wins >= 25 && (ppg + apg * 1.3 + rpg * .5) >= 21 && Math.random() < Math.min(.90, .35 + (ppg-16)*.045 + (wins-25)*.006)) {
@@ -1295,28 +1464,41 @@
 
             if (p.league === 'NBA') {
                 // Reserva durante a temporada; produção, vitórias e contribuição ofensiva.
-                const benchEligible = roleInfo.isBench && ppg >= 11.5 && wins >= 35 && (ppg + apg * 1.5 + rpg * .45) >= 17;
-                if (benchEligible && Math.random() < Math.min(.85, .25 + (ppg-11.5)*.035 + (wins-35)*.012)) awards.push('Sixth Man of the Year (6MOY)');
+                const benchEligible = roleInfo.isBench && ppg >= 17 && wins >= 38 &&
+                    (ppg + apg * 1.1 + rpg * .35) >= 21 && g >= 60;
+                const sixthManChance = Math.min(.48, .08 + Math.max(0, ppg - 17) * .035 +
+                    Math.max(0, wins - 38) * .004);
+                if (benchEligible && Math.random() < sixthManChance)
+                    awards.push('Sixth Man of the Year (6MOY)');
+                // Uma ótima temporada de reserva garante titularidade no mesmo time
+                // no ano seguinte, mesmo sem conquistar o prêmio.
+                if (roleInfo.isBench && (ppg >= 18 || awards.includes('Sixth Man of the Year (6MOY)'))) {
+                    p.promotedStarterTeam = p.team;
+                    p.promotedStarterLeague = 'NBA';
+                    p.promotedStarterSeason = p.season + 1;
+                } else if (p.promotedStarterSeason === p.season) {
+                    p.promotedStarterTeam = null; p.promotedStarterLeague = null;
+                }
                 const bpg = p.seasonStats.blk / g;
                 const spg = p.seasonStats.stl / g;
                 const defensiveScore = spg * 1.25 + bpg * 1.4 + (wins / 82) * 1.5;
                 if (wins >= 40 && defensiveScore >= 4.5 && Math.random() < Math.min(.85, .18 + (defensiveScore-4.5)*.19)) awards.push('Defensive Player of the Year (DPOY)');
-                if (wins >= 47 && ppg >= 21) {
-                    awards.push('NBA All-Star');
-                    if (wins >= 49 && ppg >= 23) awards.push('All-NBA First Team');
-                    else if (wins >= 48 && ppg >= 22) awards.push('All-NBA Second Team');
-                    else awards.push('All-NBA Third Team');
-                }
+                // All-Star e All-NBA têm critérios independentes; somente uma equipe All-NBA por ano.
+                if (wins >= 47 && ppg >= 21) awards.push('NBA All-Star');
+                if (wins >= 47 && ppg >= 24) awards.push('All-NBA First Team');
+                else if (wins >= 48 && ppg >= 23) awards.push('All-NBA Second Team');
+                else if (wins >= 48 && ppg >= 22) awards.push('All-NBA Third Team');
             }
 
-            let canBeMvp = p.ovr >= 85 && isContenderTeam;
-            if (canBeMvp) {
-                let mvpChance = 0.20;
-                if (ppg >= 25.0) mvpChance = 0.60;
-                
-                if (Math.random() < mvpChance) {
-                    awards.push("Most Valuable Player (MVP)");
-                }
+            // MVP: 24+ PPG e 52+ vitórias garantem o prêmio,
+            // independentemente do OVR. Fora desse patamar, o prêmio
+            // continua possível para jogadores de elite em times candidatos.
+            const guaranteedMvp = ppg >= 24 && wins >= 52;
+            if (guaranteedMvp) {
+                awards.push('awardMvp');
+            } else if (p.ovr >= 85 && isContenderTeam && ppg >= 21) {
+                const mvpChance = ppg >= 25 ? 0.60 : 0.20;
+                if (Math.random() < mvpChance) awards.push('awardMvp');
             }
 
             if (!p.hasWonMIP && p.season > 1) {
@@ -1325,16 +1507,71 @@
                 let diffReb = rpg - p.prevSeasonStats.rpg;
 
                 if (diffPts >= 3.0 || (diffAst >= 1.5 && diffReb >= 1.5)) {
-                    awards.push("Most Improved Player (MIP)");
+                    awards.push('awardMip');
                     p.hasWonMIP = true;
                 }
             }
 
             if (isChampion) {
                 if (p.ovr >= 90 || (p.ovr >= 87 && Math.random() < 0.5)) {
-                    awards.push("MVP das Finais");
+                    awards.push('awardFinals');
                 }
             }
+
+            // Quatro temporadas consecutivas com pelo menos 16 PPG: +2 OVR.
+            // O histórico contém somente temporadas concluídas; a temporada atual
+            // entra na sequência agora. O bônus é concedido apenas uma vez na carreira.
+            let consecutive16Ppg = ppg >= 16 ? 1 : 0;
+            if (consecutive16Ppg) {
+                for (let i = p.history.length - 1; i >= 0; i--) {
+                    const previousPpg = Number.parseFloat(String(p.history[i].stats || '').replace(',', '.'));
+                    if (!Number.isFinite(previousPpg) || previousPpg < 16) break;
+                    consecutive16Ppg++;
+                }
+            }
+            // Compatibilidade com carreiras salvas antes desta atualização:
+            // se o jogador já completou um bloco de quatro temporadas elegíveis,
+            // considera-se que o bônus anterior já foi recebido.
+            if (p.consistencyOvrBonusUsed === undefined) {
+                let priorStreak = 0;
+                p.consistencyOvrBonusUsed = p.history.some(h => {
+                    const historicalPpg = Number.parseFloat(String(h.stats || '').replace(',', '.'));
+                    priorStreak = Number.isFinite(historicalPpg) && historicalPpg >= 16 ? priorStreak + 1 : 0;
+                    return priorStreak >= 4;
+                });
+            }
+            if (consecutive16Ppg >= 4 && !p.consistencyOvrBonusUsed) {
+                p.ovr += 2;
+                p.consistencyOvrBonusUsed = true;
+                p.maxTargetOvr = Math.max(p.maxTargetOvr || 76, p.ovr);
+            }
+
+            // Bônus de premiações aplicados uma única vez em toda a carreira.
+            // All-Star promove imediatamente ao patamar de estrela (82 OVR), sem reduzir OVR alto.
+            // Prêmios obtidos nesta temporada são aplicados antes de registrar o histórico.
+            if (p.league === 'NBA' && awards.includes('NBA All-Star') && p.ovr < 82) {
+                p.ovr = 82;
+                p.maxTargetOvr = Math.max(82, p.maxTargetOvr || 76);
+            }
+            if (awards.includes('Sixth Man of the Year (6MOY)') && !p.sixthManOvrBonusUsed) {
+                p.ovr += 2;
+                p.sixthManOvrBonusUsed = true;
+                p.maxTargetOvr = Math.max(p.maxTargetOvr || 76, p.ovr);
+            }
+            if (awards.includes('awardMip') && !p.mipOvrBonusUsed) {
+                p.ovr += 1;
+                p.mipOvrBonusUsed = true;
+                p.maxTargetOvr = Math.max(p.maxTargetOvr || 76, p.ovr);
+            }
+            // Primeiro MVP da carreira: +3 OVR, sem repetir em conquistas futuras.
+            if (awards.includes('awardMvp') && !p.mvpOvrBonusUsed) {
+                p.ovr += 3;
+                p.mvpOvrBonusUsed = true;
+                p.maxTargetOvr = Math.max(p.maxTargetOvr || 76, p.ovr);
+            }
+            p.ovr = Math.min(99, p.ovr);
+            p.maxOvrAchieved = Math.max(p.maxOvrAchieved || 0, p.ovr);
+            updateDashboardUI();
 
             p.prevSeasonStats = { ppg: ppg, apg: apg, rpg: rpg };
 
@@ -1346,31 +1583,32 @@
                 league: p.league,
                 record: `${wins}-${losses}`,
                 stats: `${ppg} PPG | ${apg} APG | ${rpg} REB`,
-                result: teamResult,
+                result: resultKey,
                 shooting: `${fgPct}% FG | ${fg3Pct}% 3P`,
                 awards: awards
             });
 
             p.trophies.push(...awards);
             if (isChampion) {
-                let champTitle = `Título da ${p.league}`;
+                let champTitle = `champ:${p.league}`;
                 p.trophies.push(champTitle);
                 if (cClub) cClub.trophies.push(champTitle);
             }
 
-            setElemText('summary-title', `RESUMO DA TEMPORADA ${p.season} (${p.age} ANOS)`);
-            setElemText('summary-team-record', `${wins} V - ${losses} D`);
-            setElemText('summary-team-result', teamResult);
+            setElemText('summary-title', tf('seasonSummary',{season:p.season,age:p.age}));
+            setElemText('summary-team-record', `${wins} - ${losses}`);
+            setElemText('summary-team-result', localResult(resultKey,`${wins}-${losses}`));
             setElemText('summary-player-stats', `${ppg} PPG | ${apg} APG | ${rpg} REB`);
             setElemText('summary-player-fg', `${fgPct}% FG | ${fg3Pct}% 3P`);
 
             const awardsContainer = document.getElementById('summary-awards');
             awardsContainer.innerHTML = awards.length > 0 ? 
-                awards.map(a => `<span class="bg-amber-950 text-amber-300 border border-amber-700 px-2.5 py-1 rounded-md text-xs font-bold">${a}</span>`).join('') :
-                `<span class="text-slate-500 italic">Nenhum prêmio individual conquistado nesta temporada.</span>`;
+                awards.map(a => `<span class="bg-amber-950 text-amber-300 border border-amber-700 px-2.5 py-1 rounded-md text-xs font-bold">${localAward(a)}</span>`).join('') :
+                `<span class="text-slate-500 italic">${t("noAwards")}</span>`;
 
             p.pendingPhase = 'summary';
             document.getElementById('modal-season-summary').classList.remove('hidden');
+            revealSeasonSummary();
             renderHistoryList();
             saveCareer();
         }
@@ -1381,11 +1619,11 @@
             list.innerHTML = gameState.player.history.map(h => `
                 <div class="bg-slate-800/40 p-2.5 rounded-lg border border-slate-700/50 space-y-1">
                     <div class="flex justify-between font-bold text-amber-400">
-                        <span>Temp ${h.season} (${h.age} anos) - ${h.league} (${h.team}) [${h.record}]</span>
-                        <span class="text-emerald-400">${h.result}</span>
+                        <span>${tf('seasonHistory',{season:h.season,age:h.age})} - ${h.league} (${h.team}) [${h.record}]</span>
+                        <span class="text-emerald-400">${localResult(h.result,h.record)}</span>
                     </div>
                     <p class="text-slate-300">${h.stats}</p>
-                    ${h.awards.length > 0 ? `<p class="text-amber-300/80 font-medium">🏅 ${h.awards.join(', ')}</p>` : ''}
+                    ${h.awards.length > 0 ? `<p class="text-amber-300/80 font-medium">🏅 ${h.awards.map(localAward).join(', ')}</p>` : ''}
                 </div>
             `).join('');
         }
@@ -1416,117 +1654,96 @@
             const p = gameState.player;
             const container = document.getElementById('market-options');
             container.innerHTML = '';
-
-            const isNbaDeclined = p.age >= 33 && p.ovr < 80;
-
-            if (p.league === 'NCAA') {
-                const pool = NCAA_TEAMS.filter(t=>t!==p.team);
-                addMarketOption(container, `🎓 Transferir para ${pool[Math.floor(Math.random()*pool.length)]} (NCAA)`, 'College', 'Mais uma temporada universitária.', () => {
-                    p.team = pool[Math.floor(Math.random()*pool.length)]; p.contractYearsLeft=1; p.totalMatchesInLeague=32; p.isFreeAgency=false; closeMarket(); postMarketFlow();
+            setElemText('market-title', t('market'));
+            setElemText('market-desc', t('marketExpired'));
+            const veteranNba = p.league === 'NBA' && p.age >= 34 && p.ovr < 80;
+            const offer = (key, vars, badge, description, league, team, years, type='median') => {
+                addMarketOption(container, tf(key, vars), badge, description, () => {
+                    if (p.team !== team || p.league !== league) {
+                        p.promotedStarterTeam = null; p.promotedStarterLeague = null;
+                    }
+                    p.league=league; p.team=team; p.teamType=type;
+                    p.contractYearsLeft=years; p.totalMatchesInLeague=gamesForLeague(league);
+                    p.isFreeAgency=false; closeMarket(); postMarketFlow();
                 });
-                const nbaOptions = generateFilteredNbaOptions(p.ovr);
-                nbaOptions.forEach(opt=>addMarketOption(container, `🏀 NBA: ${opt.teamName} (${opt.roleName})`, 'NBA Draft', opt.desc, ()=>{
-                    p.league='NBA'; p.team=opt.teamName; p.teamType=opt.type; p.contractYearsLeft=3; p.totalMatchesInLeague=82; p.isFreeAgency=false; closeMarket(); postMarketFlow();
-                }));
-                const euro = EURO_TEAMS[Math.floor(Math.random()*EURO_TEAMS.length)];
-                addMarketOption(container, `🌍 EuroLiga: ${euro}`, 'Europa', 'Iniciar carreira profissional na Europa.', ()=>{
-                    p.league='EuroLiga';p.team=euro;p.teamType='median';p.contractYearsLeft=2;p.totalMatchesInLeague=34;p.isFreeAgency=false;closeMarket();postMarketFlow();
+            };
+            const nbaOffers = (draft=false) => {
+                generateFilteredNbaOptions(p.ovr).forEach(opt => {
+                    const key=draft?'marketNBA':p.league==='NBA'?'marketNbaSign':'marketNbaOffer';
+                    offer(key,{team:opt.teamName,role:opt.roleName},draft?'NBA Draft':'NBA',opt.desc,'NBA',opt.teamName,3,opt.type);
                 });
-                const nbb=NBB_TEAMS[Math.floor(Math.random()*NBB_TEAMS.length)];
-                addMarketOption(container, `🇧🇷 NBB: ${nbb}`, 'Brasil', 'Iniciar carreira profissional no Brasil.', ()=>{
-                    p.league='NBB';p.team=nbb;p.teamType='median';p.contractYearsLeft=2;p.totalMatchesInLeague=36;p.isFreeAgency=false;closeMarket();postMarketFlow();
-                });
-            } else if (p.league === 'NBB') {
-                let pool = NBB_TEAMS.filter(t => t !== p.team);
-                let randNbb = pool[Math.floor(Math.random() * pool.length)];
-
-                addMarketOption(container, `Renovar com o ${p.team} (2 Anos)`, 'NBB', 'Permanecer como ídolo da torcida no Brasil.', () => {
-                    p.contractYearsLeft = 2; p.teamType = 'median'; p.isFreeAgency = false; closeMarket(); postMarketFlow();
-                });
-
-                addMarketOption(container, `Assinar com ${randNbb} (2 Anos)`, 'NBB', 'Trocar de equipe no basquete nacional.', () => {
-                    p.team = randNbb; p.contractYearsLeft = 2; p.teamType = 'median'; p.isFreeAgency = false; closeMarket(); postMarketFlow();
-                });
-
-                if (p.season >= 2) {
-                    let euroTeam = EURO_TEAMS[Math.floor(Math.random() * EURO_TEAMS.length)];
-                    addMarketOption(container, `🌍 Assinar com ${euroTeam} (Euroliga - 3 Anos)`, 'Euroliga', 'Desafio na Europa (Titular Absoluto - 34 jogos).', () => {
-                        p.league = 'EuroLiga'; p.team = euroTeam; p.teamType = 'contender'; p.contractYearsLeft = 3; p.totalMatchesInLeague = 34; p.isFreeAgency = false; closeMarket(); postMarketFlow();
-                    });
+            };
+            if (p.league==='NCAA') {
+                const college=randomTeam(NCAA_TEAMS,p.team);
+                offer('marketTransfer',{team:college},'NCAA',t('marketCollegeDesc'),'NCAA',college,1);
+                nbaOffers(true);
+                const euro=randomTeam(EURO_TEAMS,p.team);
+                offer('marketEuro',{team:euro},'EuroLeague',t('marketProEuropeDesc'),'EuroLiga',euro,2);
+                const brazil=randomTeam(NBB_TEAMS,p.team);
+                offer('marketNBB',{team:brazil},'NBB',t('marketNbbDesc'),'NBB',brazil,2);
+            } else if(p.league==='NBB') {
+                offer('marketRenew',{team:p.team,years:2},'NBB',t('marketStayBrazilDesc'),'NBB',p.team,2,p.teamType);
+                const brazil=randomTeam(NBB_TEAMS,p.team);
+                offer('marketSign',{team:brazil,years:2},'NBB',t('marketChangeBrazilDesc'),'NBB',brazil,2);
+                if(p.season>=2) {
+                    const euro=randomTeam(EURO_TEAMS,p.team);
+                    offer('marketEuroOffer',{team:euro,years:3},'EuroLeague',t('marketEuroDesc'),'EuroLiga',euro,3,'contender');
+                    nbaOffers();
                 }
-
-                if (p.season >= 2 && !isNbaDeclined) {
-                    let nbaOptions = generateFilteredNbaOptions(p.ovr);
-                    nbaOptions.forEach(opt => {
-                        addMarketOption(container, `🏀 Proposta NBA: ${opt.teamName} (${opt.roleName} - 3 Anos)`, opt.roleName, opt.desc, () => {
-                            p.league = 'NBA'; p.team = opt.teamName; p.teamType = opt.type; p.contractYearsLeft = 3; p.totalMatchesInLeague = 82; p.isFreeAgency = false;
-                            closeMarket(); postMarketFlow();
-                        });
-                    });
-                }
-            } else if (p.league === 'EuroLiga') {
-                let euroTeam = EURO_TEAMS.filter(t => t !== p.team)[Math.floor(Math.random() * (EURO_TEAMS.length - 1))];
-                
-                addMarketOption(container, `Renovar com ${p.team} (2 Anos)`, 'Euroliga', 'Permanência no clube europeu.', () => { 
-                    p.contractYearsLeft = 2; p.isFreeAgency = false; closeMarket(); postMarketFlow(); 
-                });
-
-                addMarketOption(container, `Transferir para ${euroTeam} (2 Anos)`, 'Euroliga', 'Nova camisa no basquete europeu.', () => { 
-                    p.team = euroTeam; p.contractYearsLeft = 2; p.isFreeAgency = false; closeMarket(); postMarketFlow(); 
-                });
-
-                let nbbTeam = NBB_TEAMS[Math.floor(Math.random() * NBB_TEAMS.length)];
-                addMarketOption(container, `🇧🇷 Retornar ao Brasil: ${nbbTeam} (NBB - 2 Anos)`, 'NBB', 'Retorno triunfal para o basquete nacional.', () => {
-                    p.league = 'NBB'; p.team = nbbTeam; p.teamType = 'median'; p.contractYearsLeft = 2; p.totalMatchesInLeague = 36; p.isFreeAgency = false; closeMarket(); postMarketFlow();
-                });
-
-                if (!isNbaDeclined) {
-                    let nbaOptions = generateFilteredNbaOptions(p.ovr);
-                    nbaOptions.forEach(opt => {
-                        addMarketOption(container, `🏀 Proposta NBA: ${opt.teamName} (${opt.roleName} - 3 Anos)`, opt.roleName, opt.desc, () => {
-                            p.league = 'NBA'; p.team = opt.teamName; p.teamType = opt.type; p.contractYearsLeft = 3; p.totalMatchesInLeague = 82; p.isFreeAgency = false;
-                            closeMarket(); postMarketFlow();
-                        });
-                    });
-                }
-            } else {
-                if (isNbaDeclined) {
-                    logNews(`⚠️ OVR abaixo de 80 com idade avançada (${p.age} anos): Franquias da NBA não renovam seu contrato.`);
-                    showToast('Seu OVR baixou de 80 após os 33 anos. As franquias da NBA não oferecem novas propostas!', 'error');
-
-                    let euroTeam = EURO_TEAMS[Math.floor(Math.random() * EURO_TEAMS.length)];
-                    addMarketOption(container, `🌍 Assinar com ${euroTeam} (Euroliga - 2 Anos)`, 'Euroliga', 'Jogar na Europa como astro.', () => {
-                        p.league = 'EuroLiga'; p.team = euroTeam; p.teamType = 'contender'; p.contractYearsLeft = 2; p.totalMatchesInLeague = 34; p.isFreeAgency = false; closeMarket(); postMarketFlow();
-                    });
-
-                    let nbbTeam = NBB_TEAMS[Math.floor(Math.random() * NBB_TEAMS.length)];
-                    addMarketOption(container, `🇧🇷 Retornar ao Brasil: ${nbbTeam} (NBB - 2 Anos)`, 'NBB', 'Retorno triunfal para encerrar a carreira no Brasil.', () => {
-                        p.league = 'NBB'; p.team = nbbTeam; p.teamType = 'median'; p.contractYearsLeft = 2; p.totalMatchesInLeague = 36; p.isFreeAgency = false; closeMarket(); postMarketFlow();
-                    });
+            } else if(p.league==='EuroLiga') {
+                offer('marketRenew',{team:p.team,years:2},'EuroLeague',t('marketStayEuropeDesc'),'EuroLiga',p.team,2,p.teamType);
+                const euro=randomTeam(EURO_TEAMS,p.team);
+                offer('marketMove',{team:euro,years:2},'EuroLeague',t('marketSwitchDesc'),'EuroLiga',euro,2);
+                const brazil=randomTeam(NBB_TEAMS,p.team);
+                offer('marketBrazilOffer',{team:brazil},'NBB',t('marketReturnBrazilDesc'),'NBB',brazil,2);
+                nbaOffers();
+            } else if(p.league==='NBA') {
+                if (veteranNba) {
+                    // Contratos curtos para veteranos: sempre há uma renovação e
+                    // exatamente uma oferta de outra franquia, sorteada por mercado.
+                    offer('marketRenew',{team:p.team,years:1},'NBA · 1Y',t('marketNBAStayDesc'),'NBA',p.team,1,p.teamType);
+                    const otherTeam = randomTeam(NBA_TEAMS,p.team);
+                    const otherType = ['rebuild','median','contender'][Math.floor(Math.random()*3)];
+                    const roleKey = {rebuild:'roleRebuild',median:'roleMedian',contender:'roleContender'}[otherType];
+                    const descKey = {rebuild:'roleRebuildDesc',median:'roleMedianDesc',contender:'roleContenderDesc'}[otherType];
+                    offer('marketVeteranOffer',{team:otherTeam,role:t(roleKey)},'NBA · 1Y',t(descKey),'NBA',otherTeam,1,otherType);
+                    const euro=randomTeam(EURO_TEAMS,p.team);
+                    offer('marketEuroOffer',{team:euro,years:1},'EuroLeague',t('marketEuroDesc'),'EuroLiga',euro,1);
+                    const brazil=randomTeam(NBB_TEAMS,p.team);
+                    offer('marketBrazilOffer',{team:brazil},'NBB',t('marketLastBrazilDesc'),'NBB',brazil,1);
                 } else {
-                    addMarketOption(container, `Renovar Contrato com o ${p.team} (3 Anos)`, 'NBA', 'Permanecer na franquia atual da NBA.', () => {
-                        p.contractYearsLeft = 3; p.isFreeAgency = false; closeMarket(); postMarketFlow();
-                    });
-
-                    let nbaOptions = generateFilteredNbaOptions(p.ovr);
-                    nbaOptions.forEach(opt => {
-                        addMarketOption(container, `🏀 Assinar com ${opt.teamName} (${opt.roleName} - 3 Anos)`, opt.roleName, opt.desc, () => {
-                            p.team = opt.teamName; p.teamType = opt.type; p.contractYearsLeft = 3; p.totalMatchesInLeague = 82; p.isFreeAgency = false;
-                            closeMarket(); postMarketFlow();
-                        });
-                    });
+                    const years = p.age >= 34 ? 1 : 3;
+                    offer('marketRenew',{team:p.team,years},'NBA',t('marketNBAStayDesc'),'NBA',p.team,years,p.teamType);
+                    if (p.age >= 34) {
+                        const otherTeam=randomTeam(NBA_TEAMS,p.team);
+                        offer('marketVeteranOffer',{team:otherTeam,role:t('roleMedian')},'NBA · 1Y',t('marketSwitchDesc'),'NBA',otherTeam,1,'median');
+                    } else nbaOffers();
                 }
+            } else if(p.league==='CBA') {
+                offer('marketRenew',{team:p.team,years:2},'CBA',t('stayChina'),'CBA',p.team,2,p.teamType);
+                const brazil=randomTeam(NBB_TEAMS,p.team);
+                offer('marketBrazilOffer',{team:brazil},'NBB',t('brazilOffer'),'NBB',brazil,2);
+                const euro=randomTeam(EURO_TEAMS,p.team);
+                offer('marketEuropeOffer',{team:euro},'EuroLeague',t('europeOffer'),'EuroLiga',euro,2);
+                if(p.age >= 34 && p.ovr < 80) {
+                    const otherTeam=randomTeam(NBA_TEAMS,p.team);
+                    offer('marketVeteranOffer',{team:otherTeam,role:t('roleRebuild')},'NBA · 1Y',t('marketSwitchDesc'),'NBA',otherTeam,1,'rebuild');
+                } else nbaOffers();
             }
-
+            if(p.league!=='CBA' || p.age>=30) {
+                const china=randomTeam(CBA_TEAMS,p.team);
+                offer('marketChinaOffer',{team:china},'CBA',t('chinaOffer'),'CBA',china,2,
+                    ['contender','median','rebuild'][Math.floor(Math.random()*3)]);
+            }
             document.getElementById('modal-market').classList.remove('hidden');
         }
 
         function generateFilteredNbaOptions(ovr) {
-            const teams = [...NBA_TEAMS].sort(() => Math.random() - .5);
-            const types = ovr >= 85 ? ['contender','median','contender','rebuild'] : ovr >= 79 ? ['median','contender','rebuild','median'] : ['rebuild','median','contender','rebuild'];
-            const labels = {contender:'Candidato ao Título', median:'Equipe Competitiva', rebuild:'Reconstrução'};
-            return types.map((type,i) => ({teamName:teams[i],roleName:labels[type],type,
-                desc:type==='contender'?'Disputar playoffs e buscar o título, com forte concorrência por minutos.':type==='median'?'Equipe equilibrada com oportunidade de crescer e disputar playoffs.':'Projeto de desenvolvimento com espaço para conquistar minutos.'}));
+            const teams=[...NBA_TEAMS].sort(()=>Math.random()-.5);
+            const types=ovr>=85?['contender','median','contender','rebuild']:ovr>=79?['median','contender','rebuild','median']:['rebuild','median','contender','rebuild'];
+            const roleKeys={contender:'roleContender',median:'roleMedian',rebuild:'roleRebuild'};
+            const descKeys={contender:'roleContenderDesc',median:'roleMedianDesc',rebuild:'roleRebuildDesc'};
+            return types.map((type,i)=>({teamName:teams[i],roleName:t(roleKeys[type]),type,desc:t(descKeys[type])}));
         }
 
         function addMarketOption(container, title, badge, desc, callback) {
@@ -1560,7 +1777,7 @@
 
         function openPreSeason() {
             const p = gameState.player;
-            setElemText('pre-season-age-info', `Temporada ${p.season + 1} (${p.age + 1} anos) - Ciclo de Treinamento de 3 Anos:`);
+            setElemText('pre-season-age-info', tf('preseasonInfo',{season:p.season+1,age:p.age+1}));
             p.pendingPhase = 'training';
             saveCareer();
             document.getElementById('pre-season-screen').classList.remove('hidden');
@@ -1569,7 +1786,7 @@
         // Evolução anual única para temporadas com e sem campo de treinamento.
         // O teto é um potencial, não uma meta garantida. Inclui estagnação e regressão.
         function evolveOverall(p, trained) {
-            if (!Number.isFinite(p.developmentRate)) p.developmentRate = 0.65 + Math.random() * 0.7;
+            if (!Number.isFinite(p.developmentRate)) p.developmentRate = 0.78 + Math.random() * 0.67;
             if (!Number.isFinite(p.peakAge)) p.peakAge = 27 + Math.floor(Math.random() * 6);
             if (!Number.isFinite(p.developmentMomentum)) p.developmentMomentum = 0;
             const age = p.age;
@@ -1596,7 +1813,7 @@
             const ageFactor = age <= 23 ? 1 : age <= 27 ? .78 : age <= p.peakAge ? .48 : .22;
             const distanceFactor = distance <= 0 ? 0 : distance === 1 ? .22 : distance <= 3 ? .45 : distance <= 6 ? .70 : 1;
             const trainingFactor = trained ? 1.13 : 1;
-            const chance = Math.min(.83, .57 * p.developmentRate * ageFactor * distanceFactor * trainingFactor);
+            const chance = Math.min(.85, .66 * p.developmentRate * ageFactor * distanceFactor * trainingFactor);
             const roll = Math.random();
             if (distance > 0 && roll < chance) {
                 const bigJump = distance >= 7 && age <= 24 && Math.random() < .13;
@@ -1629,14 +1846,12 @@
 
             document.getElementById('pre-season-screen').classList.add('hidden');
             updateDashboardUI();
-            logNews(`Temporada ${p.season} iniciada (${p.age} anos)! OVR: ${p.ovr}`);
+            logNews(tf('seasonNews',{season:p.season,age:p.age,ovr:p.ovr}));
 
             showNewsCard(
-                `TEMPORADA ${p.season} INICIADA!`,
-                `<p>Seu ciclo de treinos de pré-temporada foi concluído!</p>
-                 <p class="mt-2 text-emerald-400 font-bold">Idade: ${p.age} anos | OVR Atual: ${p.ovr}</p>
-                 <p class="text-xs text-slate-400 mt-1">Time: ${p.team} (${p.league})</p>`,
-                "NOVA TEMPORADA",
+                tf('seasonStarted',{season:p.season}),
+                `<p>${tf('trainedBody',{age:p.age,ovr:p.ovr,team:p.team,league:p.league})}</p>`,
+                t('newSeason'),
                 () => { checkSurpriseTradeSeasonStart(); }
             );
         }
@@ -1658,22 +1873,66 @@
             generateClutchMatches();
 
             updateDashboardUI();
-            logNews(`Temporada ${p.season} iniciada (${p.age} anos). OVR atual: ${p.ovr}`);
+            logNews(tf('seasonNews',{season:p.season,age:p.age,ovr:p.ovr}));
 
             showNewsCard(
-                `TEMPORADA ${p.season} INICIADA!`,
-                `<p>Uma nova jornada profissional se inicia na quadra.</p>
-                 <p class="mt-2 text-emerald-400 font-bold">Idade: ${p.age} anos | OVR Atual: ${p.ovr}</p>
-                 <p class="text-xs text-slate-400 mt-1">Time: ${p.team} (${p.league})</p>`,
-                "NOVA TEMPORADA",
+                tf('seasonStarted',{season:p.season}),
+                `<p>${tf('newSeasonBody',{age:p.age,ovr:p.ovr,team:p.team,league:p.league})}</p>`,
+                t('newSeason'),
                 () => { checkSurpriseTradeSeasonStart(); }
             );
         }
 
         function restartCareer() {
-            if (!confirm('Iniciar uma nova carreira? O progresso salvo será apagado.')) return;
+            if (!confirm(t('startFresh'))) return;
             localStorage.removeItem(SAVE_KEY);
             location.reload();
+        }
+
+        // Avaliação do legado: OVR + qualidade/quantidade dos prêmios.
+        // A categoria Estrela exige pelo menos uma convocação All-Star; All-NBA contribui
+        // menos que MVP, DPOY e Finals MVP. Títulos também contam.
+        function calculateCareerLegacy(p) {
+            const peak = Number(p.maxOvrAchieved) || 76;
+            const awards = Array.isArray(p.trophies) ? p.trophies : [];
+            const count = test => awards.filter(a => test(String(a).toLowerCase())).length;
+            const mvp = count(a => a === 'awardmvp' || (a.includes('mvp') && !a.includes('final') && !a.includes('improved')));
+            const finalsMvp = count(a => a === 'awardfinals' || a.includes('finals mvp'));
+            const dpoy = count(a => a.includes('dpoy') || a.includes('defensive player of the year'));
+            const roty = count(a => a.includes('roty') || a.includes('rookie of the year'));
+            const sixth = count(a => a.includes('6moy') || a.includes('sixth man'));
+            const mip = count(a => a === 'awardmip' || a.includes('most improved'));
+            const allStar = count(a => a.includes('all-star'));
+            const first = count(a => a.includes('all-nba first'));
+            const second = count(a => a.includes('all-nba second'));
+            const third = count(a => a.includes('all-nba third'));
+            const championships = (p.history || []).filter(h => h.result === 'playoffChampion' || String(h.result).includes('Campeão da Liga')).length;
+            const score = Math.max(0, peak - 76) * 2.1
+                + mvp * 38 + finalsMvp * 28 + dpoy * 22 + roty * 12
+                + sixth * 9 + mip * 5 + Math.min(allStar, 12) * 2
+                + Math.min(first, 12) * 5 + Math.min(second, 12) * 3
+                + Math.min(third, 12) * 2 + championships * 4;
+            // GOAT exige OVR de auge >= 86, pelo menos um MVP da temporada,
+            // pelo menos um campeonato e legado excepcional. Sem qualquer
+            // requisito, o teto da classificação passa a ser Lenda da Liga.
+            if (peak >= 86 && mvp >= 1 && championships >= 1 && score >= 115 && (mvp >= 2 || (mvp >= 1 && finalsMvp >= 1))) return 'goat';
+            if (score >= 73 && (mvp >= 1 || finalsMvp >= 1 || dpoy >= 1 || peak >= 87)) return 'legend';
+            // Estrela requer ao menos uma seleção All-Star, independentemente do OVR.
+            if (allStar >= 1) return 'star';
+            // DPOY garante Craque, mas MIP sozinho não promove a Estrela.
+            if (dpoy >= 1 || mvp >= 1 || score >= 32 || peak >= 84) return 'craque';
+            if (score >= 5 || peak >= 79) return 'starter';
+            return 'roleplayer';
+        }
+        function careerLegacyLabel(level) {
+            const labels = {
+                en: ['Role Player 🛡️', 'Consistent Starter 🏀', 'Standout 🏅', 'Star ⭐', 'League Legend 🌟', 'GOAT 🐐'],
+                'pt-BR': ['Role Player 🛡️', 'Titular Consistente 🏀', 'Craque 🏅', 'Estrela ⭐', 'Lenda da Liga 🌟', 'GOAT 🐐'],
+                es: ['Jugador de Rotación 🛡️', 'Titular Consistente 🏀', 'Crack 🏅', 'Estrella ⭐', 'Leyenda de la Liga 🌟', 'GOAT 🐐'],
+                zh: ['轮换球员 🛡️', '稳定首发 🏀', '优秀球员 🏅', '球星 ⭐', '联盟传奇 🌟', '历史最佳 🐐']
+            };
+            const keys = ['roleplayer', 'starter', 'craque', 'star', 'legend', 'goat'];
+            return (labels[currentLanguage] || labels.en)[keys.indexOf(level)];
         }
 
         // RESUMO DA CARREIRA LIMPO E ORGANIZADO
@@ -1681,14 +1940,10 @@
             const p = gameState.player;
             const maxOvr = p.maxOvrAchieved;
 
-            let tierDesc = "";
-            if (maxOvr >= 90) tierDesc = "GOAT 🐐";
-            else if (maxOvr >= 83) tierDesc = "Lenda da Liga ⭐";
-            else if (maxOvr >= 76) tierDesc = "Titular Consistente 🏀";
-            else tierDesc = "Role Player 🛡️";
+            const tierDesc = careerLegacyLabel(calculateCareerLegacy(p));
 
             setElemText('c-name', p.name);
-            setElemText('c-age', `${p.age} Anos`);
+            setElemText('c-age', tf('ageYears',{age:p.age}));
             setElemText('c-tier', tierDesc);
             setElemText('c-max-ovr', maxOvr);
 
@@ -1696,12 +1951,12 @@
             const teamsList = Object.keys(p.clubStats);
             document.getElementById('c-teams-list').innerHTML = teamsList.length > 0 ?
                 teamsList.map(t => `<span class="bg-slate-900 text-emerald-400 border border-slate-800 px-2.5 py-1 rounded-lg font-semibold">${t}</span>`).join('') :
-                '<span class="text-slate-500 italic">Nenhum time registrado.</span>';
+                `<span class="text-slate-500 italic">${t('noTeams')}</span>`;
 
             // 2. TÍTULOS POR LIGA (CONTAGEM)
             let leagueTitles = {};
             p.history.forEach(h => {
-                let champCheck = h.result.includes('Campeão da Liga');
+                let champCheck = h.result==='playoffChampion' || h.result.includes('Campeão da Liga');
                 if (champCheck) {
                     leagueTitles[h.league] = (leagueTitles[h.league] || 0) + 1;
                 }
@@ -1710,17 +1965,18 @@
             const titlesContainer = document.getElementById('c-titles-list');
             let titleEntries = Object.entries(leagueTitles);
             titlesContainer.innerHTML = titleEntries.length > 0 ?
-                titleEntries.map(([league, count]) => `<div class="flex justify-between items-center bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800"><span>${league}</span><strong class="text-amber-400">${count}x Título(s)</strong></div>`).join('') :
-                '<span class="text-slate-500 italic">Nenhum título de liga conquistado.</span>';
+                titleEntries.map(([league, count]) => `<div class="flex justify-between items-center bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800"><span>${league}</span><strong class="text-amber-400">${tf('titlesCount',{count})}</strong></div>`).join('') :
+                `<span class="text-slate-500 italic">${t('noTitles')}</span>`;
 
             // 3. MÉDIAS GERAIS DA CARREIRA (TOTAIS / JOGOS GLOBAIS)
-            let totalGames = 0, totalPts = 0, totalAst = 0, totalReb = 0, totalStl = 0, totalFgm = 0, totalFga = 0, total3pm = 0, total3pa = 0;
+            let totalGames = 0, totalPts = 0, totalAst = 0, totalReb = 0, totalStl = 0, totalBlk = 0, totalFgm = 0, totalFga = 0, total3pm = 0, total3pa = 0;
             Object.values(p.clubStats).forEach(c => {
                 totalGames += c.games;
                 totalPts += c.pts;
                 totalAst += c.ast;
                 totalReb += c.reb;
                 totalStl += c.stl;
+                totalBlk += c.blk || 0;
                 totalFgm += c.fgm;
                 totalFga += c.fga;
                 total3pm += c.fg3m;
@@ -1732,13 +1988,14 @@
             setElemText('c-avg-rpg', (totalReb / g).toFixed(1));
             setElemText('c-avg-apg', (totalAst / g).toFixed(1));
             setElemText('c-avg-spg', (totalStl / g).toFixed(1));
+            setElemText('c-avg-bpg', (totalBlk / g).toFixed(1));
             setElemText('c-avg-fg', totalFga > 0 ? `${((totalFgm / totalFga) * 100).toFixed(1)}%` : '0%');
             setElemText('c-avg-3p', total3pa > 0 ? `${((total3pm / total3pa) * 100).toFixed(1)}%` : '0%');
 
             // 4. PRÊMIOS INDIVIDUAIS E QUANTAS VEZES GANHOU
             let awardCounts = {};
             p.trophies.forEach(t => {
-                if (!t.includes('Título')) {
+                if (!t.includes('Título') && !t.startsWith('champ:')) {
                     awardCounts[t] = (awardCounts[t] || 0) + 1;
                 }
             });
@@ -1746,18 +2003,18 @@
             const awardsList = document.getElementById('c-awards-list');
             let awardEntries = Object.entries(awardCounts);
             awardsList.innerHTML = awardEntries.length > 0 ?
-                awardEntries.map(([award, count]) => `<span class="bg-slate-900 text-amber-300 border border-slate-800 px-3 py-1.5 rounded-lg font-bold">${award}: <strong class="text-white">${count}x</strong></span>`).join('') :
-                '<span class="text-slate-500 italic">Nenhum prêmio individual conquistado na carreira.</span>';
+                awardEntries.map(([award, count]) => `<span class="bg-slate-900 text-amber-300 border border-slate-800 px-3 py-1.5 rounded-lg font-bold">${localAward(award)}: <strong class="text-white">${count}x</strong></span>`).join('') :
+                `<span class="text-slate-500 italic">${t('awardNoCareer')}</span>`;
 
             // 5. TABELA DE DESEMPENHO ANO A ANO
             const yearlyTable = document.getElementById('c-yearly-table');
             yearlyTable.innerHTML = p.history.map(h => `
                 <tr class="hover:bg-slate-900/50 transition-colors border-b border-slate-800/40">
-                    <td class="p-3 font-bold text-amber-400">Temp ${h.season}</td>
-                    <td class="p-3">${h.age} anos</td>
+                    <td class="p-3 font-bold text-amber-400">${tf('careerYear',{season:h.season})}</td>
+                    <td class="p-3">${tf('yearsOld',{age:h.age})}</td>
                     <td class="p-3 font-semibold text-white">${h.league} (${h.team})</td>
                     <td class="p-3 font-bold text-emerald-400">OVR ${h.ovr}</td>
-                    <td class="p-3 text-slate-400">${h.record} (${h.result})</td>
+                    <td class="p-3 text-slate-400">${h.record} (${localResult(h.result)})</td>
                     <td class="p-3 text-white">${h.stats}</td>
                     <td class="p-3 text-amber-300 font-medium">${h.awards.join(', ') || '-'}</td>
                 </tr>
