@@ -1458,7 +1458,7 @@
                 awards.push('awardScorer');
             }
 
-            if (p.league === 'NBA' && p.nbaSeasonCount === 1 && ppg >= 16 && wins >= 25 && (ppg + apg * 1.3 + rpg * .5) >= 21 && Math.random() < Math.min(.90, .35 + (ppg-16)*.045 + (wins-25)*.006)) {
+            if (p.league === 'NBA' && p.nbaSeasonCount === 1 && ppg >= 13.5 && wins >= 25 && (ppg + apg * 1.3 + rpg * .5) >= 18.5 && Math.random() < Math.min(.90, .35 + (ppg-13.5)*.045 + (wins-25)*.006)) {
                 awards.push("Rookie of the Year (ROTY)");
             }
 
@@ -1512,15 +1512,25 @@
                 }
             }
 
-            if (isChampion) {
-                if (p.ovr >= 90 || (p.ovr >= 87 && Math.random() < 0.5)) {
-                    awards.push('awardFinals');
-                }
+            // Finals MVP: apenas campeão da NBA e com status de Estrela
+            // ou Superestrela no elenco durante a temporada.
+            if (p.league === 'NBA' && isChampion && roleInfo.roleTier >= 3) {
+                awards.push('awardFinals');
             }
 
-            // Quatro temporadas consecutivas com pelo menos 16 PPG: +2 OVR.
-            // O histórico contém somente temporadas concluídas; a temporada atual
-            // entra na sequência agora. O bônus é concedido apenas uma vez na carreira.
+            // Uma temporada com 20+ PPG concede +1 OVR uma única vez,
+            // inclusive em idade avançada. Histórico anterior evita bônus duplicado.
+            if (p.twentyPpgOvrBonusUsed === undefined) {
+                p.twentyPpgOvrBonusUsed = p.history.some(h =>
+                    Number.parseFloat(String(h.stats || '').replace(',', '.')) >= 20);
+            }
+            if (ppg >= 20 && !p.twentyPpgOvrBonusUsed) {
+                p.ovr += 1;
+                p.twentyPpgOvrBonusUsed = true;
+                p.maxTargetOvr = Math.max(p.maxTargetOvr || 76, p.ovr);
+            }
+
+            // Quatro temporadas consecutivas com 16+ PPG: +1 OVR uma vez na carreira.
             let consecutive16Ppg = ppg >= 16 ? 1 : 0;
             if (consecutive16Ppg) {
                 for (let i = p.history.length - 1; i >= 0; i--) {
@@ -1529,9 +1539,7 @@
                     consecutive16Ppg++;
                 }
             }
-            // Compatibilidade com carreiras salvas antes desta atualização:
-            // se o jogador já completou um bloco de quatro temporadas elegíveis,
-            // considera-se que o bônus anterior já foi recebido.
+            // Preserva o bônus antigo para quem já o recebeu na V19–V22.
             if (p.consistencyOvrBonusUsed === undefined) {
                 let priorStreak = 0;
                 p.consistencyOvrBonusUsed = p.history.some(h => {
@@ -1541,7 +1549,7 @@
                 });
             }
             if (consecutive16Ppg >= 4 && !p.consistencyOvrBonusUsed) {
-                p.ovr += 2;
+                p.ovr += 1;
                 p.consistencyOvrBonusUsed = true;
                 p.maxTargetOvr = Math.max(p.maxTargetOvr || 76, p.ovr);
             }
@@ -1561,6 +1569,27 @@
             if (awards.includes('awardMip') && !p.mipOvrBonusUsed) {
                 p.ovr += 1;
                 p.mipOvrBonusUsed = true;
+                p.maxTargetOvr = Math.max(p.maxTargetOvr || 76, p.ovr);
+            }
+            // DPOY: +1 OVR nas duas primeiras conquistas, no máximo.
+            // Em saves antigos, prêmios anteriores contam para o limite.
+            if (p.dpoyOvrBonusesUsed === undefined) {
+                p.dpoyOvrBonusesUsed = (p.trophies || []).filter(a =>
+                    String(a).includes('Defensive Player of the Year (DPOY)')).length;
+            }
+            if (awards.includes('Defensive Player of the Year (DPOY)') && p.dpoyOvrBonusesUsed < 2) {
+                p.ovr += 1;
+                p.dpoyOvrBonusesUsed++;
+                p.maxTargetOvr = Math.max(p.maxTargetOvr || 76, p.ovr);
+            }
+            // ROTY: +2 OVR na primeira conquista, sem duplicar em saves antigos.
+            if (p.rotyOvrBonusUsed === undefined) {
+                p.rotyOvrBonusUsed = (p.trophies || []).some(a =>
+                    String(a).includes('Rookie of the Year (ROTY)'));
+            }
+            if (awards.includes('Rookie of the Year (ROTY)') && !p.rotyOvrBonusUsed) {
+                p.ovr += 2;
+                p.rotyOvrBonusUsed = true;
                 p.maxTargetOvr = Math.max(p.maxTargetOvr || 76, p.ovr);
             }
             // Primeiro MVP da carreira: +3 OVR, sem repetir em conquistas futuras.
